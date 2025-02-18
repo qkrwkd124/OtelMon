@@ -1,0 +1,32 @@
+# 어디서 어떤 포맷으로 데이터를 받을지
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+# 받은 데이터를 어떻게 가공할지
+# batch 프로세서 : 트레이스 데이터를 일정 크기(혹은 시간)만큼 모아서, 한 번에 Exporter로 내보냅니다.
+processors:
+  batch:
+    send_batch_size: 1024 # 데이터를 최대 1024개(Span 등) 모았다가 한 번에 보냄
+    timeout: 3s # 5초가 지나면, 모인 데이터 양이 적더라도 일단 보냄
+
+# 가공된 데이터를 어디로 보낼지
+exporters:
+  debug:
+    verbosity: detailed
+  otlp:
+    endpoint: "jaeger:14250"
+    tls: 
+      insecure: true # TLS 사용 안함 HTTPS 사용X
+
+# 최종적으로 어떤 파이프라인(Receiver -> Processor -> Exporter)을 사용할지
+service:
+  pipelines:
+    traces:
+      receivers: [otlp] # traces 파이프라인에 사용할 리시버: otlp
+      processors: [batch] # traces 파이프라인에서 배치 프로세서를 적용
+      exporters: [otlp, debug] # → traces 파이프라인 결과를 logging과 jaeger 두 군데로 동시에 보냄
