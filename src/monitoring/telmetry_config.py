@@ -4,7 +4,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.trace import Status, StatusCode
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
 def init_telemetry():
 
@@ -34,7 +34,7 @@ def init_telemetry_otlp():
     provider = TracerProvider(resource=resoure)
     
     # 스팬 프로세서 생성
-    otlp_exporter = OTLPSpanExporter(endpoint="http://localhost:4318/v1/traces")
+    otlp_exporter = OTLPSpanExporter(endpoint="http://localhost:4317/v1/traces")
     
     # BatchSpanProcessor 에 OTLPSpanExporter 등록
     span_processor = BatchSpanProcessor(otlp_exporter)
