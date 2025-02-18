@@ -15,7 +15,7 @@ def etl_process(csv_file_path:str):
 
         start_time = datetime.datetime.now()
 
-        span.set_attribute("etl.start_time", start_time)
+        # span.set_attribute("etl.start_time", start_time)
         span.set_attribute("etl.process_id", os.getpid())
 
         csv_row_count = 0
@@ -37,13 +37,13 @@ def etl_process(csv_file_path:str):
 
         finally:
             end_time = datetime.datetime.now()
-            span.set_attribute("etl.end_time", end_time)
+            # span.set_attribute("etl.end_time", end_time)
             span.set_attribute("etl.duration", (end_time - start_time).total_seconds())
             span.set_attribute("etl.success_flag", success_flag)
             span.set_attribute("etl.csv_row_count", csv_row_count)
 
             if success_flag:
-                span.set_status(Status(StatusCode.OK, "ETL Process Success"))
+                span.set_status(StatusCode.OK)
 
 
 
