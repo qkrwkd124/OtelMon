@@ -19,7 +19,7 @@ exporters:
   debug:
     verbosity: detailed
   otlp:
-    endpoint: "jaeger:14250"
+    endpoint: "jaeger:4317"
     tls: 
       insecure: true # TLS 사용 안함 HTTPS 사용X
 
