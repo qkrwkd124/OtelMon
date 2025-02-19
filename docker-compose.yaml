@@ -32,7 +32,7 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - ./prometheus-config.yaml:/etc/prometheus/prometheus-config.yaml
+      - ./prometheus-config.yml:/etc/prometheus/prometheus-config.yml
     ports:
       - "9090:9090" # Prometheus UI
     networks:
