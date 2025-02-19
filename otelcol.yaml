@@ -22,6 +22,8 @@ exporters:
     endpoint: "jaeger:4317"
     tls: 
       insecure: true # TLS 사용 안함 HTTPS 사용X
+  prometheus:
+    endpoint: "0.0.0.0:9464"
 
 # 최종적으로 어떤 파이프라인(Receiver -> Processor -> Exporter)을 사용할지
 service:
@@ -30,3 +32,8 @@ service:
       receivers: [otlp] # traces 파이프라인에 사용할 리시버: otlp
       processors: [batch] # traces 파이프라인에서 배치 프로세서를 적용
       exporters: [otlp, debug] # → traces 파이프라인 결과를 logging과 jaeger 두 군데로 동시에 보냄
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
