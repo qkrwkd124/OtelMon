@@ -16,6 +16,8 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
 
 @dataclass
 class Result():
@@ -37,6 +39,27 @@ class Result():
 # 전역 변수로 선언
 _tracer = None
 _meter = None
+_instrumented = False  # 자동 계측 초기화 여부 플래그
+
+def _init_instrumentation():
+    """
+    자동 계측(Automatic Instrumentation) 설정을 여기에 모아둠
+    """
+    global _instrumented
+    if _instrumented:
+        # 이미 한 번 초기화했다면 중복 호출 방지
+        return
+    
+    # 예: requests 자동 계측
+    RequestsInstrumentor().instrument()
+
+    # 예: psycopg2 사용 시
+    # Psycopg2Instrumentor().instrument()
+
+    # 예: logging 자동 계측
+    # LoggingInstrumentor().instrument(set_logging_format=True)
+    
+    _instrumented = True
 
 def _init_tracer():
     """
@@ -45,6 +68,8 @@ def _init_tracer():
     global _tracer
     if _tracer is not None:
         return _tracer
+    
+    _init_instrumentation()
         
     resoure = Resource.create(attributes={"service.name": "etl_tracer", "service.version": "1.0.0","host.name": os.uname().nodename})
     tracer_provider = TracerProvider(resource=resoure)

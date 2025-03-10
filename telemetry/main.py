@@ -2,22 +2,29 @@
 import random
 import time
 import decorators
+import requests
 
 @decorators.traced
 def extract_data() -> decorators.Result:
     """
     파일/DB에서 데이터 추출 (가정)
     """
-    time.sleep(random.uniform(0.5, 1.0))
-    row_count = random.randint(10, 100)
-    source_info = "/home/study/data/data.csv"  # 혹은 DB info
-    message = "Extracted data ok."
+    print("extract_data")
+
+    params = {
+        "serviceKey":"5uf4mJY2hv8gIwfKm5eECzvzzWdUckj4Ori+r9k0kjKe8Tgw0bRHzBBXped6NWRT+wuaTIaMPK2UN0Ji6KGbuA==",
+        "pageNo":1,
+        "numOfRows":300,
+    }
+    response = requests.get("http://apis.data.go.kr/B552696/ksight/riskindex", params=params)
+
+    data = response.json()
+    
+    row_count = response.json()['response']['body']['totalCount']
     
     return decorators.Result(
         result={},
-        trace_metric={
-            "etl.filepath": source_info,
-            },
+        trace_metric={},
         process_count=row_count
     )
 
