@@ -44,6 +44,7 @@ _instrumented = False  # 자동 계측 초기화 여부 플래그
 def _init_instrumentation():
     """
     자동 계측(Automatic Instrumentation) 설정을 여기에 모아둠
+    _init_instrumentation() 함수에서 RequestsInstrumentor().instrument() 등 자동 계측 초기화를 처리하고, 이미 한 번 실행되었다면 다시 실행하지 않도록 global _instrumented 플래그를 사용.
     """
     global _instrumented
     if _instrumented:
@@ -68,8 +69,6 @@ def _init_tracer():
     global _tracer
     if _tracer is not None:
         return _tracer
-    
-    _init_instrumentation()
         
     resoure = Resource.create(attributes={"service.name": "etl_tracer", "service.version": "1.0.0","host.name": os.uname().nodename})
     tracer_provider = TracerProvider(resource=resoure)
@@ -102,6 +101,7 @@ def traced(func):
         
         tracer = _init_tracer()
         meter = _init_meter()
+        _init_instrumentation()
         
         # 메트릭 카운터와 히스토그램 생성
         process_counter = meter.create_counter(
@@ -118,6 +118,8 @@ def traced(func):
         with tracer.start_as_current_span(func.__name__) as span:
             try:
                 start_time = datetime.now()
+
+                span.set_attribute("etl.group_name", "test_etl")
                 
                 # 프로세스 시작 시간 기록
                 span.set_attribute("etl.start_time", start_time.isoformat())

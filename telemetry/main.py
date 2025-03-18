@@ -10,15 +10,24 @@ def extract_data() -> decorators.Result:
     파일/DB에서 데이터 추출 (가정)
     """
     print("extract_data")
-
+    url = "http://apis.data.go.kr/1262000/OverviewEconomicService/OverviewEconomicList"
     params = {
         "serviceKey":"5uf4mJY2hv8gIwfKm5eECzvzzWdUckj4Ori+r9k0kjKe8Tgw0bRHzBBXped6NWRT+wuaTIaMPK2UN0Ji6KGbuA==",
         "pageNo":1,
-        "numOfRows":300,
+        "numOfRows":10,
+        "cond[country_nm::EQ]":"러시아",
+        "cond[country_iso_alp2::EQ]":"RU"
     }
-    response = requests.get("http://apis.data.go.kr/B552696/ksight/riskindex", params=params)
-
-    data = response.json()
+    response = requests.get(url, params=params)
+    # params = {
+    #     "serviceKey":"5uf4mJY2hv8gIwfKm5eECzvzzWdUckj4Ori+r9k0kjKe8Tgw0bRHzBBXped6NWRT+wuaTIaMPK2UN0Ji6KGbuA==",
+    #     "pageNo":1,
+    #     "numOfRows":300,
+    # }
+    # response = requests.get("http://apis.data.go.kr/B552696/ksight/riskindex", params=params, verify=False)
+    print(response.history)
+    print(response.status_code)
+    print(response.text)
     
     row_count = response.json()['response']['body']['totalCount']
     
