@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 
+from routers import exporter
+
 
 # 설정 파일 읽기
 # base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +29,9 @@ from fastapi.encoders import jsonable_encoder
 #     ]
 # )
 
-app = FastAPI(title="맞춤형무역보험 API")
+app = FastAPI(title="OTLP Custom Exporter")
+app.include_router(exporter.router)
+
 
 app.add_middleware(
     CORSMiddleware,
