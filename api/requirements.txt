@@ -1,2 +1,4 @@
 fastapi
 uvicorn
+opentelemetry-proto==1.20.0  # Collector 버전과 맞추기
+protobuf==4.22.1  # 호환되는 버전 사용
