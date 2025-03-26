@@ -63,6 +63,21 @@ services:
     networks:
       - otel-network
 
+  fastapi:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: otelmon-api
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./api:/app
+    restart: unless-stopped
+    networks:
+      - otel-network
+    environment:
+      - TZ=Asia/Seoul
+
 networks:
   otel-network:
     driver: bridge
