@@ -95,74 +95,80 @@ def _init_meter():
     return _meter
 
 
-def traced(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        
-        tracer = _init_tracer()
-        meter = _init_meter()
-        _init_instrumentation()
-        
-        # 메트릭 카운터와 히스토그램 생성
-        process_counter = meter.create_counter(
-            name="etl_process_count",
-            description="ETL 프로세스 실행 횟수",
-            unit="1"
-        )
-        duration_histogram = meter.create_histogram(
-            name="etl_duration",
-            description="ETL 프로세스 실행 시간",
-            unit="s"
-        )
-        
-        with tracer.start_as_current_span(func.__name__) as span:
-            try:
-                start_time = datetime.now()
+def traced(host_name: str="test_etl"):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            
+            tracer = _init_tracer()
+            meter = _init_meter()
+            _init_instrumentation()
+            
+            # 메트릭 카운터와 히스토그램 생성
+            process_counter = meter.create_counter(
+                name="etl_process_count",
+                description="ETL 프로세스 실행 횟수",
+                unit="1"
+            )
+            duration_histogram = meter.create_histogram(
+                name="etl_duration",
+                description="ETL 프로세스 실행 시간",
+                unit="s"
+            )
+            
+            with tracer.start_as_current_span(func.__name__) as span:
+                try:
+                    start_time = datetime.now()
 
-                span.set_attribute("etl.group_name", "test_etl")
-                
-                # 프로세스 시작 시간 기록
-                span.set_attribute("etl.start_time", start_time.isoformat())
-                span.set_attribute("etl.process_name", func.__name__)
-                
-                # 함수 실행
-                result = func(*args, **kwargs)
-                
-                # 프로세스 종료 시간 및 duration 기록
-                end_time = datetime.now()
-                duration = (end_time - start_time).total_seconds()
-                
-                # 스팬에 결과 기록
-                if isinstance(result, Result):
-                    span.set_attribute("etl.process_count", result.process_count)
-                    span.set_attribute("etl.success", True)
-                    for key, value in result.trace_metric.items():
-                        span.set_attribute(f"{key}", str(value))
-                
-                # 메트릭 기록
-                process_counter.add(1, {"status": "success"})
-                duration_histogram.record(duration)
-                
-                span.set_status(StatusCode.OK)
-                return result
-                
-            except Exception as e:
-                # 오류 정보 기록
-                span.set_attribute("etl.error", str(e))
-                span.set_attribute("etl.error_type", type(e).__name__)
-                span.set_attribute("etl.stacktrace", traceback.format_exc())
-                span.set_attribute("etl.success", False)
-                
-                # 오류 메트릭 기록
-                process_counter.add(1, {"status": "error"})
-                
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                raise
-                
-            finally:
-                # 종료 시간 기록
-                span.set_attribute("etl.end_time", datetime.now().isoformat())
-    
-    return wrapper
+                    group_name = kwargs.get("group_name", "ETL")
+                    process_name = kwargs.get("process_name", func.__name__)
+                    
+                    span.set_attribute("etl.host_name", host_name)
+                    span.set_attribute("etl.group_name", group_name)
+                    span.set_attribute("etl.process_name", process_name)
+                    
+                    # 프로세스 시작 시간 기록
+                    span.set_attribute("etl.start_time", start_time.isoformat())
+                    
+                    # 함수 실행
+                    result = func(*args, **kwargs)
+                    
+                    # 프로세스 종료 시간 및 duration 기록
+                    end_time = datetime.now()
+                    duration = (end_time - start_time).total_seconds()
+                    
+                    # 스팬에 결과 기록
+                    if isinstance(result, Result):
+                        span.set_attribute("etl.process_count", result.process_count)
+                        span.set_attribute("etl.success", True)
+                        for key, value in result.trace_metric.items():
+                            span.set_attribute(f"{key}", str(value))
+                    
+                    # 메트릭 기록
+                    process_counter.add(1, {"status": "success"})
+                    duration_histogram.record(duration)
+                    
+                    span.set_status(StatusCode.OK)
+                    return result
+                    
+                except Exception as e:
+                    # 오류 정보 기록
+                    span.set_attribute("etl.error", str(e))
+                    span.set_attribute("etl.error_type", type(e).__name__)
+                    span.set_attribute("etl.stacktrace", traceback.format_exc())
+                    span.set_attribute("etl.success", False)
+                    
+                    # 오류 메트릭 기록
+                    process_counter.add(1, {"status": "error"})
+                    
+                    span.set_status(Status(StatusCode.ERROR, str(e)))
+                    raise
+                    
+                finally:
+                    # 종료 시간 기록
+                    span.set_attribute("etl.end_time", datetime.now().isoformat())
+        
+        return wrapper
+    return decorator
 
 
