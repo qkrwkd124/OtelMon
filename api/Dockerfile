@@ -9,4 +9,7 @@ COPY . .
 
 EXPOSE 8090
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8090"]
+# PYTHONPATH 환경변수 설정
+ENV PYTHONPATH=/app
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8090", "--reload"]
