@@ -4,8 +4,8 @@ import time
 import decorators
 import requests
 
-@decorators.traced
-def extract_data() -> decorators.Result:
+@decorators.traced(host_name="nifietl")
+def extract_data(group_name: str="ETL", process_name: str="데이터추출") -> decorators.Result:
     """
     파일/DB에서 데이터 추출 (가정)
     """
@@ -37,7 +37,7 @@ def extract_data() -> decorators.Result:
         process_count=row_count
     )
 
-@decorators.traced(host_name="test_etl")
+@decorators.traced(host_name="nifietl")
 def transform_data(rows: int, group_name: str="ETL", process_name: str="데이터변환") -> decorators.Result:
     """
     변환 로직 (가정)
@@ -54,8 +54,8 @@ def transform_data(rows: int, group_name: str="ETL", process_name: str="데이�
         process_count=filtered_rows
     )
 
-@decorators.traced()
-def load_data(rows: int) -> decorators.Result:
+@decorators.traced(host_name="nifietl")
+def load_data(rows: int, group_name: str="ETL", process_name: str="데이터적재") -> decorators.Result:
     """
     적재 로직 (가정)
     """
@@ -68,8 +68,8 @@ def load_data(rows: int) -> decorators.Result:
 
 if __name__ == "__main__":
     try :
-        extract_data()
-        load_data(100)
-        transform_data(100)
+        extract_data(group_name="ETL", process_name="데이터추출")
+        load_data(100, group_name="ETL", process_name="데이터적재")
+        transform_data(100, group_name="ETL", process_name="데이터변환")
     except Exception as e:
         print(f"Error: {e}")
