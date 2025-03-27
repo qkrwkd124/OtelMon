@@ -47,7 +47,7 @@ async def export_telemetry_data(request:Request, background_tasks:BackgroundTask
         # 디버깅을 위한 로그
         logger.info(f"Received content type: {request.headers.get('content-type')}")
         logger.info(f"Raw content length: {len(content)}")
-        logger.info(f"Converted JSON data: {json.dumps(json_data, indent=2)}")
+        logger.info(f"Converted JSON data: {json.dumps(json_data, ensure_ascii=False, indent=2)}")
         
         return {"status": "success", "data": json_data}
 
