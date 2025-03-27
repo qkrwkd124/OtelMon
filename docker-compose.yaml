@@ -70,13 +70,16 @@ services:
     container_name: otelmon-api
     ports:
       - "8090:8090"
+    user: "1000:1000"
     volumes:
       - ./api:/app
+      - ./api/logs:/app/logs
     restart: unless-stopped
     networks:
       - otel-network
     environment:
       - TZ=Asia/Seoul
+      - LOG_DIR=/app/logs
 
 networks:
   otel-network:
