@@ -37,8 +37,8 @@ def extract_data() -> decorators.Result:
         process_count=row_count
     )
 
-@decorators.traced
-def transform_data(rows: int) -> decorators.Result:
+@decorators.traced(host_name="test_etl")
+def transform_data(rows: int, group_name: str="ETL", process_name: str="데이터변환") -> decorators.Result:
     """
     변환 로직 (가정)
     """
@@ -54,7 +54,7 @@ def transform_data(rows: int) -> decorators.Result:
         process_count=filtered_rows
     )
 
-@decorators.traced
+@decorators.traced()
 def load_data(rows: int) -> decorators.Result:
     """
     적재 로직 (가정)
