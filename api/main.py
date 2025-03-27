@@ -2,6 +2,8 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import configparser
+import uuid
+import time
 from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response, HTTPException
@@ -11,23 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 
 from routers import exporter
-
-
-# 설정 파일 읽기
-# base_dir = os.path.dirname(os.path.abspath(__file__))
-# config = configparser.ConfigParser()
-# config.read(os.path.join(base_dir,'database.conf'),encoding="utf-8")
-
-# # log setting
-# log_path = os.path.join(config['LOG']['log_path'],f"{config['LOG']['log_name']}.log")
-
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='[%(asctime)s] %(process)d, "%(filename)s", %(lineno)d, %(funcName)s : %(message)s',datefmt='%Y/%m/%d %H:%M:%S',
-#     handlers=[
-#         RotatingFileHandler(log_path, maxBytes=10000000, backupCount=9)
-#     ]
-# )
+from logger import app_logger
 
 app = FastAPI(title="OTLP Custom Exporter")
 app.include_router(exporter.router)
@@ -53,18 +39,35 @@ async def health_check():
 # 요청 체크
 @app.middleware("http")
 async def log_request(request:Request, call_next:Callable) -> Response:
-    """요청에 대한 로그"""
-    logging.info(f"Request: {request.method} {request.url}")
-    response: Response = await call_next(request)
-    logging.info(f"Response: {response.status_code}")
+    """요청 로깅 미들웨어"""
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    
+    app_logger.info(
+        f"Request started: {request.method} {request.url.path}",
+        extra={"request_id": request_id}
+    )
+    
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    app_logger.info(
+        f"Request completed: {request.method} {request.url.path} "
+        f"Status: {response.status_code} Duration: {process_time:.3f}s",
+        extra={"request_id": request_id}
+    )
+    
+    response.headers["X-Request-ID"] = request_id
     return response
+
 
 
 # 422 에러를 처리하는 전역 예외 처리기
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
 
-    logging.error(f"Validation error for request {request.url}: {exc.errors()}")
+    app_logger.error(f"Validation error for request {request.url}: {exc.errors()}")
 
     return JSONResponse(
         status_code=200,
@@ -79,7 +82,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def exception_handler(request:Request, exc:Exception) -> JSONResponse:
     """예외 핸들러"""
-    logging.error(f"Exception: {exc}")
+    app_logger.error(f"Exception: {exc}")
 
     return JSONResponse(
         status_code=500,
