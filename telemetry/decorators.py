@@ -70,7 +70,7 @@ def _init_tracer():
     if _tracer is not None:
         return _tracer
         
-    resoure = Resource.create(attributes={"service.name": "etl_tracer", "service.version": "1.0.0","host.name": os.uname().nodename})
+    resoure = Resource.create(attributes={"service.name": "etl_tracer", "service.version": "1.0.0","host.name": os.uname().nodename, "timezone": "Asia/Seoul"})
     tracer_provider = TracerProvider(resource=resoure)
     span_processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317/v1/traces"))
     tracer_provider.add_span_processor(span_processor)
@@ -140,7 +140,7 @@ def traced(host_name: str="test_etl"):
                     # 스팬에 결과 기록
                     if isinstance(result, Result):
                         span.set_attribute("etl.process_count", result.process_count)
-                        span.set_attribute("etl.success", True)
+                        # span.set_attribute("etl.success", True)
                         for key, value in result.trace_metric.items():
                             span.set_attribute(f"{key}", str(value))
                     
@@ -156,7 +156,7 @@ def traced(host_name: str="test_etl"):
                     span.set_attribute("etl.error", str(e))
                     span.set_attribute("etl.error_type", type(e).__name__)
                     span.set_attribute("etl.stacktrace", traceback.format_exc())
-                    span.set_attribute("etl.success", False)
+                    # span.set_attribute("etl.success", False)
                     
                     # 오류 메트릭 기록
                     process_counter.add(1, {"status": "error"})
