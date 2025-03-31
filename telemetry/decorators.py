@@ -95,7 +95,7 @@ def _init_meter():
     return _meter
 
 
-def traced(host_name: str="test_etl"):
+def traced():
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -123,7 +123,7 @@ def traced(host_name: str="test_etl"):
                     group_name = kwargs.get("group_name", "ETL")
                     process_name = kwargs.get("process_name", func.__name__)
                     
-                    span.set_attribute("etl.host_name", host_name)
+                    span.set_attribute("etl.platform", "AirFlow")
                     span.set_attribute("etl.group_name", group_name)
                     span.set_attribute("etl.process_name", process_name)
                     
