@@ -3,7 +3,7 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     # 데이터베이스 설정
-    DATABASE_URL: str = "postgresql://username:password@localhost/etlmonitor"
+    DATABASE_URL: str = "mysql+pymysql://monitor:1q2w3e4r@mariadb:3306/otelmon"
     
     # SMTP 설정
     SMTP_SERVER: str = "smtp.gmail.com"
