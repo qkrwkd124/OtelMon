@@ -63,9 +63,9 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
     if "etl.platform" in attributes:
         platform_type = attributes["etl.platform"]
     elif "airflow" in span["name"].lower() or "dag" in attributes.get("etl.group_name", "").lower():
-        platform_type = "airflow"
+        platform_type = "AirFlow"
     else:
-        platform_type = "nifi"
+        platform_type = "NiFi"
     
     # 그룹명과 프로세스명 결정
     group_name = attributes.get("etl.group_name", "unknown")
