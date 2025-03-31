@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # SMTP 설정
     SMTP_SERVER: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
-    SMTP_USER: str = "qkrwkd124@gmail.com"
+    SMTP_USER: str = "younpark0428@gmail.com"
     SMTP_PASSWORD: str = ""
     
     # SMS 설정
