@@ -5,3 +5,4 @@ protobuf==4.22.1  # 호환되는 버전 사용
 sqlalchemy
 pydantic-settings
 requests
+pymysql
