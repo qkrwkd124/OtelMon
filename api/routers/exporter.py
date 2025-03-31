@@ -11,12 +11,12 @@ from logger import get_logger
 from config import get_settings
 from utils.trace_processor import extract_process_executions
 from services.notification import NotificationService
-
+from services.database import ProcessExecutionService
 router = APIRouter()
 logger = get_logger(__name__)
 
 def get_db_service():
-    pass
+    return ProcessExecutionService(get_settings())
 
 def get_notification_service():
     return NotificationService(get_settings())
@@ -25,7 +25,7 @@ def get_notification_service():
 async def export_telemetry_data(
     request:Request,
     background_tasks:BackgroundTasks,
-    # db_service = Depends(get_db_service),
+    db_service:ProcessExecutionService = Depends(get_db_service),
     notification_service:NotificationService = Depends(get_notification_service),
 ):
     """
@@ -66,6 +66,10 @@ async def export_telemetry_data(
         execution_data_list = extract_process_executions(json_data)
 
         logger.info(f"Extracted execution data: {execution_data_list}")
+
+        for execution_data in execution_data_list:
+            execution_id = await db_service.save_execution(execution_data)
+            logger.info(f"Saved execution: {execution_id}")
 
         # 실패한 작업에 대해 알림 발송
         for execution_data in execution_data_list:
