@@ -71,8 +71,7 @@ async def export_telemetry_data(
         for execution_data in execution_data_list:
             if not execution_data.get("success", True):
                 background_tasks.add_task(notification_service.notify_failure, execution_data)
-
-        logger.info('mail send')
+                logger.info('mail send')
         return {"status": "success", "data": json_data}
 
     except Exception as e :
