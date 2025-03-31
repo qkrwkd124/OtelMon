@@ -81,6 +81,27 @@ services:
       - TZ=Asia/Seoul
       - LOG_DIR=/app/logs
 
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=otelmon
+      - MYSQL_USER=monitor
+      - MYSQL_PASSWORD=1q2w3e4r
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    networks:
+      - otel-network
+
+volumes:
+  mariadb_data:
+
 networks:
   otel-network:
     driver: bridge
