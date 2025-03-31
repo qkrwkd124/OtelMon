@@ -4,7 +4,7 @@ import time
 import decorators
 import requests
 
-@decorators.traced(host_name="nifietl")
+@decorators.traced()
 def extract_data(group_name: str="ETL", process_name: str="데이터추출") -> decorators.Result:
     """
     파일/DB에서 데이터 추출 (가정)
@@ -25,7 +25,6 @@ def extract_data(group_name: str="ETL", process_name: str="데이터추출") -> 
     #     "numOfRows":300,
     # }
     # response = requests.get("http://apis.data.go.kr/B552696/ksight/riskindex", params=params, verify=False)
-    print(response.history)
     print(response.status_code)
     print(response.text)
     
@@ -37,16 +36,17 @@ def extract_data(group_name: str="ETL", process_name: str="데이터추출") -> 
         process_count=row_count
     )
 
-@decorators.traced(host_name="nifietl")
+@decorators.traced()
 def transform_data(rows: int, group_name: str="ETL", process_name: str="데이터변환") -> decorators.Result:
     """
     변환 로직 (가정)
     """
     time.sleep(random.uniform(0.2, 0.8))
     # 랜덤으로 에러 발생 가정
-    if random.random() < 0.2:
+    if random.random() < 0.4:
         # 에러 상황
-        raise ValueError("Transform error!")
+        pass
+    raise ValueError("Transform error!")
     filtered_rows = int(rows * 0.9)
     return decorators.Result(
         result={},
@@ -54,7 +54,7 @@ def transform_data(rows: int, group_name: str="ETL", process_name: str="데이�
         process_count=filtered_rows
     )
 
-@decorators.traced(host_name="nifietl")
+@decorators.traced()
 def load_data(rows: int, group_name: str="ETL", process_name: str="데이터적재") -> decorators.Result:
     """
     적재 로직 (가정)
