@@ -99,8 +99,53 @@ services:
     networks:
       - otel-network
 
+  nifi:
+    build:
+      context: ./nifi
+      dockerfile: Dockerfile
+      args:
+        UID: 1000
+        GID: 1000
+    container_name: nifi
+    user: "1000:1000"
+    ports:
+      - "38443:38443"
+    volumes:
+      - nifi_database_repository:/opt/nifi/nifi-current/database_repository
+      - nifi_flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_content_repository:/opt/nifi/nifi-current/content_repository
+      - nifi_provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - nifi_state:/opt/nifi/nifi-current/state
+      - nifi_conf:/opt/nifi/nifi-current/conf
+      - ./nifi/scripts:/opt/nifi/nifi-current/scripts
+      - ./nifi/logs:/opt/nifi/nifi-current/logs
+      - ./nifi/storage:/opt/nifi/nifi-current/storage
+    environment:
+      TZ: 'Asia/Seoul'
+      NIFI_WEB_HTTPS_HOST: '0.0.0.0'
+      NIFI_WEB_HTTPS_PORT: 38443
+      NIFI_WEB_PROXY_HOST: '0.0.0.0:38443'
+      SINGLE_USER_CREDENTIALS_USERNAME: 'admin'
+      SINGLE_USER_CREDENTIALS_PASSWORD: 'Admin@nifi1234' # 12자 이상
+
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://nifi:38443/nifi"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    networks:
+      - otel-network
+
+
 volumes:
   mariadb_data:
+  nifi_database_repository:
+  nifi_flowfile_repository:
+  nifi_content_repository:
+  nifi_provenance_repository:
+  nifi_state:
+  nifi_conf:
 
 networks:
   otel-network:
