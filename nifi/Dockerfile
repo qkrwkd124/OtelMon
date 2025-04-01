@@ -11,7 +11,7 @@ RUN usermod -u $UID nifi && groupmod -g $GID nifi \
  && chown -R nifi:nifi ${NIFI_BASE_DIR}
 
 USER nifi
-
+ENV PYTHONPATH=/opt/nifi/nifi-current/scripts
 WORKDIR /opt/nifi/nifi-current
 
 USER root
