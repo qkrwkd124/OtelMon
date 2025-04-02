@@ -22,7 +22,11 @@ def extract(*args, **kwargs) :
     logging.info(response.text)
 
     row_count = response.json()['response']['body']['totalCount']
-    
+    logging.info(args)
+    logging.info(kwargs)
+    logging.info(f"group_name : {kwargs.get('group_name')}")
+    logging.info(f"process_name : {kwargs.get('process_name')}")
+
     return nifi.Result(
         result={},
         process_count=row_count

@@ -11,6 +11,11 @@ if originalFlowFile != None:
     # flow 파라미터 Get
     params = originalFlowFile.getAttributes()
     params_dict = dict(params)
+
+    # trace 용 프로세스 명    
+    trace_process_name = context.getName()
+    params_dict["process_name"] = trace_process_name
+
     params_json = json.dumps(params_dict, indent=2)
 
     # Execute 스크립트에 저장된 Python 프로세스 파일명
