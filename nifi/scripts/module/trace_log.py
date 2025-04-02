@@ -70,7 +70,7 @@ def _init_tracer():
     if _tracer is not None:
         return _tracer
         
-    resoure = Resource.create(attributes={"service.name": "etl_tracer", "service.version": "1.0.0","host.name": os.uname().nodename, "timezone": "Asia/Seoul"})
+    resoure = Resource.create(attributes={"service.name": "etl_tracer", "service.version": "1.0.0","host.name": os.getenv('REAL_HOSTNAME','cpietl'), "timezone": "Asia/Seoul"})
     tracer_provider = TracerProvider(resource=resoure)
     span_processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"))
     tracer_provider.add_span_processor(span_processor)
@@ -123,7 +123,7 @@ def traced():
                     group_name = kwargs.get("group_name", "ETL")
                     process_name = kwargs.get("process_name", func.__name__)
                     
-                    span.set_attribute("etl.platform", "AirFlow")
+                    span.set_attribute("etl.platform", "NiFi")
                     span.set_attribute("etl.group_name", group_name)
                     span.set_attribute("etl.process_name", process_name)
                     
@@ -153,7 +153,7 @@ def traced():
                     
                 except Exception as e:
                     # 오류 정보 기록
-                    span.set_attribute("etl.error", str(e))
+                    span.set_attribute("etl.error", traceback.format_exc())
                     span.set_attribute("etl.error_type", type(e).__name__)
                     span.set_attribute("etl.stacktrace", traceback.format_exc())
                     # span.set_attribute("etl.success", False)
