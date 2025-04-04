@@ -6,10 +6,8 @@ RUN pip install --no-cache-dir \
         apache-airflow-providers-mysql \
         apache-airflow-providers-sftp
 
-# Requirements
+# OpenTelemetry Requirements
 COPY ./requirements.txt /opt
 RUN pip install --no-cache-dir -r /opt/requirements.txt
 
-USER root
-RUN groupadd -g 985 docker
 USER airflow
