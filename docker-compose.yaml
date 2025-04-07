@@ -1,5 +1,6 @@
 version: "1"
 services:
+  # OpenTelemetry 관련 서비스들
   otelcol:
     image: otel/opentelemetry-collector-contrib:0.119.0
     container_name: otelcol
@@ -137,63 +138,6 @@ services:
 
     networks:
       - otel-network
-
-  # airflow-webserver:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: airflow-webserver
-  #   networks:
-  #     - otel-network
-  #   environment:
-  #     - REAL_HOSTNAME=${REAL_HOSTNAME:-cpoetl}
-
-  # airflow-scheduler:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: airflow-scheduler
-  #   networks:
-  #     - otel-network
-  #   environment:
-  #     - REAL_HOSTNAME=${REAL_HOSTNAME:-cpoetl}
-
-  # airflow-worker:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: airflow-worker
-  #   networks:
-  #     - otel-network
-  #   environment:
-  #     - REAL_HOSTNAME=${REAL_HOSTNAME:-cpoetl}
-
-  # airflow-triggerer:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: airflow-triggerer
-  #   networks:
-  #     - otel-network
-  #   environment:
-  #     - REAL_HOSTNAME=${REAL_HOSTNAME:-cpoetl}
-
-  # airflow-init:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: airflow-init
-  #   networks:
-  #     - otel-network
-
-  # airflow-postgres:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: postgres
-  #   networks:
-  #     - otel-network
-
-  # airflow-redis:
-  #   extends:
-  #     file: airflow/docker-compose.yml
-  #     service: redis
-  #   networks:
-  #     - otel-network
 
 volumes:
   mariadb_data:

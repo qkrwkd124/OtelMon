@@ -8,7 +8,7 @@ from airflow.decorators import dag, task
 from airflow.utils.dates import days_ago
 
 # 플러그인 임포트
-from airflow.plugins.otel_plugin import traced_task, Result
+from trace_log import traced_task, Result
 
 # 기본 인수 정의
 default_args = {
@@ -24,7 +24,8 @@ default_args = {
     dag_id='trace_log_test_taskflow',
     default_args=default_args,
     description='OpenTelemetry 트레이싱 테스트 DAG (TaskFlow API)',
-    schedule_interval=timedelta(days=1),
+    # schedule_interval=timedelta(days=1),
+    schedule_interval='@once',
     start_date=days_ago(1),
     tags=['test', 'otel', 'trace', 'taskflow'],
 )
@@ -33,7 +34,7 @@ def trace_log_test_taskflow():
     
     # 태스크 정의 - 데이터 생성
     @task(task_id='generate_data')
-    @traced_task(task_group="data_processing")
+    @traced_task(task_group="trace_log_test_taskflow")
     def generate_data() -> Dict[str, Any]:
         """테스트용 데이터를 생성하는 함수"""
         # 작업 시뮬레이션
@@ -62,7 +63,7 @@ def trace_log_test_taskflow():
     
     # 태스크 정의 - 데이터 변환
     @task(task_id='transform_data')
-    @traced_task(task_group="data_processing")
+    @traced_task(task_group="trace_log_test_taskflow")
     def transform_data(data_dict: Dict[str, Any]) -> Dict[str, Any]:
         """데이터를 변환하는 함수"""
         # 작업 시뮬레이션
@@ -92,7 +93,7 @@ def trace_log_test_taskflow():
     
     # 태스크 정의 - 외부 API 호출
     @task(task_id='call_external_api')
-    @traced_task(task_group="external_api")
+    @traced_task(task_group="trace_log_test_taskflow")
     def call_external_api() -> Dict[str, Any]:
         """외부 API를 호출하는 함수 (requests 라이브러리 자동 계측 테스트)"""
         # 작업 시뮬레이션
@@ -118,7 +119,7 @@ def trace_log_test_taskflow():
     
     # 태스크 정의 - 결과 요약
     @task(task_id='generate_report')
-    @traced_task(task_group="reporting")
+    @traced_task(task_group="trace_log_test_taskflow")
     def generate_report(transform_data_dict: Dict[str, Any], api_data_dict: Dict[str, Any]) -> Dict[str, Any]:
         """결과 보고서를 생성하는 함수"""
         # 작업 시뮬레이션
