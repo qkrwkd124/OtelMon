@@ -7,12 +7,12 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 ## 시스템 아키텍처 🏗️
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│     Airflow     │     │      NiFi       │     │    FastAPI      │
-│(워크플로우 관리)│     │ (데이터 파이프라인)│     │ (트레이스 수집/알람)│
-│                 │     │                 │     │                 │
-└───────┬─────────┘     └────────┬────────┘     └────────┬────────┘
+┌─────────────────┐     ┌─────────────────┐     ┌───────────────── ┐
+│                 │     │                 │     │                  │
+│     Airflow     │     │      NiFi       │     │    FastAPI       │
+│(워크플로우 관리) │     │(데이터 파이프라인)│     │(트레이스 수집/알람)│
+│                 │     │                 │     │                   │
+└───────┬─────────┘     └────────┬────────┘     └────────┬────────  ┘
         │                        │                       │
         │                        │                       │
         │       OpenTelemetry SDK (계측)                 │
@@ -156,11 +156,11 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 ## 시스템 스크린샷 📸
 
 ### 알람 이메일 📧
-![알람 이메일 스크린샷](![image](https://github.com/user-attachments/assets/63eaf1a9-fbfa-4eb2-a695-a96c6916a34e)
-)
+<img src="https://github.com/user-attachments/assets/42ae8cdf-868b-422c-8d2e-4b3a45badcf5" width="600"/>
 
 ### MariaDB 저장 데이터 💾
-![MariaDB 저장 데이터 스크린샷](images/mariadb_data.png)
+<img src="https://github.com/user-attachments/assets/454e507e-fa1c-4c14-b8a5-affbe4479b62" width="1000"/>
+
 
 ## 트러블슈팅 🔧
 
