@@ -156,7 +156,8 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 ## 시스템 스크린샷 📸
 
 ### 알람 이메일 📧
-![알람 이메일 스크린샷](images/alarm_email.png)
+![알람 이메일 스크린샷](![image](https://github.com/user-attachments/assets/63eaf1a9-fbfa-4eb2-a695-a96c6916a34e)
+)
 
 ### MariaDB 저장 데이터 💾
 ![MariaDB 저장 데이터 스크린샷](images/mariadb_data.png)
