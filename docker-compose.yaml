@@ -1,4 +1,3 @@
-version: "1"
 services:
   # OpenTelemetry 관련 서비스들
   otelcol:
@@ -150,4 +149,5 @@ volumes:
 
 networks:
   otel-network:
-    driver: bridge
+    external: true
+    name: otel-network
