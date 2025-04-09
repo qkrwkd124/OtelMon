@@ -92,14 +92,32 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 
 이 프로젝트는 Docker 네트워크를 사용하여 서비스 간 통신을 구성합니다:
 
-- **otel-network**: 주요 OpenTelemetry 관련 서비스 연결
+- **otel-network**: 모든 서비스가 공유하는 공통 네트워크
   - otelcol, tempo, prometheus, grafana, nifi, mariadb, fastapi 컨테이너가 포함
+  - airflow 컨테이너들도 이 네트워크에 연결됨
   - 이 네트워크 내에서는 컨테이너 이름으로 서비스 접근 가능 (예: `otelcol:4317`)
 
-- **Airflow 네트워크 구성**:
-  - Airflow는 별도의 Docker Compose 파일로 관리되며 기본 네트워크를 사용
-  - OpenTelemetry Collector와의 통신을 위해 Docker 호스트를 통한 연결 방식 채택
-  - Airflow 내의 `trace_log.py`에서는 `host.docker.internal:4317` 엔드포인트를 사용하여 호스트를 통해 otelcol 서비스에 접근
+- **네트워크 구성 단계**:
+  1. 먼저 otel-network 생성:
+     ```bash
+     docker network create otel-network
+     ```
+  
+  2. OtelMon 서비스 실행:
+     ```bash
+     docker-compose up -d
+     ```
+  
+  3. Airflow 서비스 실행 (otel-network 공유):
+     ```bash
+     cd airflow
+     docker-compose up -d
+     ```
+
+- **서비스 간 통신**:
+  - 모든 서비스는 컨테이너 이름으로 직접 통신 가능
+  - 예: Airflow에서 OpenTelemetry Collector 접근 시 `otelcol:4317` 사용
+  - 별도의 호스트 IP 또는 호스트 이름 필요 없음
 
 ## 주요 구성 파일 📁
 
@@ -109,7 +127,6 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 - **tempo.yaml**: Tempo 설정
 - **prometheus.yml**: Prometheus 설정
 - **ExecutePython.py**: NiFi ExecuteScript 프로세서용 Python 실행기
-- **nifi.py**: NiFi 파이프라인용 OpenTelemetry 계측 스크립트
 
 ## 시스템 스크린샷 📸
 
@@ -123,11 +140,15 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 ## 트러블슈팅 🔧
 
 ### 네트워크 연결 문제 🔌
-서로 다른 Docker Compose 네트워크 간 통신 문제가 발생할 경우:
-- Airflow에서 otelcol로 연결 시 `localhost` 대신 `host.docker.internal`을 사용
-- Docker 호스트 IP 사용 (Linux: `172.17.0.1` 또는 실제 호스트 IP)
+- Docker 네트워크 설정 확인
+- 컨테이너 이름으로 서비스 접근 (예: otelcol:4317)
 
 ### 로그 확인 📝
 문제 진단을 위한
 - OpenTelemetry Collector 로그: `docker logs otelcol`
 - Airflow 로그: `docker logs airflow-webserver`
+
+### Trace 전송 문제 📝
+- trace_log.py의 span_processor 설정 확인
+- force_flush() 호출 확인
+- BatchSpanProcessor와 SimpleSpanProcessor 설정 검토
