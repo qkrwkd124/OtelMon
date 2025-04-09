@@ -74,7 +74,7 @@ def trace_log_test_taskflow():
         transformed_data = [{"id": item["id"], "transformed_value": item["value"] * 2} for item in data]
         
         # 가끔 오류 발생 시뮬레이션 (10% 확률로 오류 발생)
-        if random.random() < 0.1:
+        if random.random() < 0.5:
             raise Exception("랜덤 변환 오류 발생")
         
         # 메트릭 정보
