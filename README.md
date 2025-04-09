@@ -147,6 +147,7 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
 문제 진단을 위한
 - OpenTelemetry Collector 로그: `docker logs otelcol`
 - Airflow 로그: `docker logs airflow-webserver`
+- FastAPI: `docker logs otelmon-api`
 
 ### Trace 전송 문제 📝
 - trace_log.py의 span_processor 설정 확인
