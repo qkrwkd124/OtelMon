@@ -199,12 +199,14 @@ def failed_process_alert():
         # 데이터프레임 컬럼 이름 한글화
         df = df.rename(columns={
             'id': '실행 ID',
+            'host_name': '호스트명',
             'platform_type': '플랫폼',
             'group_name': '그룹명',
             'process_name': '프로세스명',
             'start_time': '시작 시간',
             'end_time': '종료 시간',
             'error_message': '에러 메시지',
+            'error_type': '에러 타입',
             'duration_seconds': '소요 시간(초)'
         })
         
