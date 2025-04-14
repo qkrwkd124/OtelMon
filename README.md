@@ -1,8 +1,32 @@
-
-
 ## 프로젝트 개요 📋
 
 OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및 애플리케이션의 성능 모니터링과 분산 추적을 구현한 종합 모니터링 시스템입니다. 이 프로젝트는 Airflow, NiFi, FastAPI 등 여러 데이터 처리 도구들의 메트릭과 트레이스 데이터를 수집하고 시각화하여 시스템 운영 상태를 효율적으로 관리할 수 있도록 설계되었습니다.
+
+### 실패 프로세스 알람 시스템 🔔
+
+OtelMon은 두 가지 방식의 알람 시스템을 제공합니다:
+
+1. **실시간 알람**
+   - FastAPI를 통한 즉각적인 실패 감지
+   - 프로세스 실패 발생 시 즉시 알람 발송
+   - 개별 프로세스 단위의 상세한 오류 정보 제공
+
+2. **배치 알람 (Airflow DAG)**
+   - 주기적으로 DB를 폴링하여 실패한 프로세스 검사
+   - 24시간 이내의 실패한 프로세스들을 한 번에 집계
+   - 종합적인 실패 현황 리포트 제공
+   - 중복 알람 방지를 위한 알람 이력 관리
+   - 보기 좋은 HTML 형식의 이메일 리포트
+     - 실패 건수 요약
+     - 플랫폼/그룹별 구분
+     - 에러 메시지 강조
+     - 실행 시간 및 소요 시간 정보
+
+이러한 이중 알람 시스템을 통해:
+- 긴급한 실패는 즉시 대응 가능
+- 주기적인 종합 리포트로 전체 현황 파악 용이
+- 알람 이력 관리로 중복 알림 방지
+- 실패 패턴 분석 및 추세 파악 가능
 
 ## 시스템 아키텍처 🏗️
 
@@ -87,6 +111,40 @@ OtelMon은 OpenTelemetry를 활용하여 다양한 데이터 파이프라인 및
    - FastAPI: http://localhost:8090/docs
    - Jaeger UI: http://localhost:16686
    - Prometheus: http://localhost:9090
+
+### 알람 시스템 설정 ⚙️
+
+#### 1. 이메일 설정
+- **SMTP 설정**: `.env` 파일에서 다음 환경 변수 설정
+  ```bash
+  SMTP_USER=your-email@gmail.com
+  SMTP_PASSWORD=your-app-password
+  SMTP_MAIL_FROM=your-email@gmail.com
+  ```
+  
+- **Gmail 사용 시 주의사항**:
+  - 2단계 인증 활성화 필요
+  - 앱 비밀번호 생성하여 사용
+  - SMTP 포트(587) 및 TLS 설정 확인
+
+#### 2. Airflow DAG 설정
+- **스케줄 간격 설정**: `failed_process_alert_dag.py`의 `SCHEDULE_INTERVAL` 수정
+  - 기본값: 30분 (`@once`)
+  - 예시: `'*/30 * * * *'` (30분마다)
+
+- **수신자 설정**: `EMAIL_RECIPIENT` 리스트 수정
+  ```python
+  EMAIL_RECIPIENT = ["user1@company.com", "user2@company.com"]
+  ```
+
+- **알람 범위 설정**: `get_new_failed_processes.sql` 수정
+  - 기본값: 최근 24시간 내 실패한 프로세스
+  - 필요시 `INTERVAL` 값 조정
+
+#### 3. 실시간 알람 설정 (FastAPI)
+- **API 엔드포인트**: `/api/v1/process-failure`
+- **알람 조건 설정**: `process_failure_handler.py` 수정
+- **수신자 설정**: FastAPI 환경 변수에서 설정
 
 ## 네트워크 구성 🌐
 
