@@ -188,8 +188,11 @@ OtelMon은 두 가지 방식의 알람 시스템을 제공합니다:
 
 ## 시스템 스크린샷 📸
 
-### 알람 이메일 📧
+### 알람 이메일(실시간) 📧
 <img src="https://github.com/user-attachments/assets/42ae8cdf-868b-422c-8d2e-4b3a45badcf5" width="600"/>
+
+### 알람 이메일(배치) 📧
+<img src="https://github.com/user-attachments/assets/a867e71a-836c-4d4d-b465-aef4a8d6835e" width="600"/>
 
 ### MariaDB 저장 데이터 💾
 <img src="https://github.com/user-attachments/assets/454e507e-fa1c-4c14-b8a5-affbe4479b62" width="1000"/>
