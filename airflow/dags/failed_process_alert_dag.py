@@ -22,7 +22,7 @@ SQL_DIR = Path(__file__).parent / 'sql'
 
 # 상수 정의
 CONN_ID = 'log_db'  # DB 연결 ID
-EMAIL_RECIPIENT = "alerts@company.com"  # 이메일 수신자
+EMAIL_RECIPIENT = ["younpark@mobigen.com"] # 이메일 수신자
 SCHEDULE_INTERVAL = '@once'  # 30분마다 실행
 
 
@@ -178,34 +178,83 @@ def failed_process_alert():
         # HTML 스타일 지정
         html_style = """
         <style>
-            table {
-                border-collapse: collapse;
-                width: 100%;
-                font-family: Arial, sans-serif;
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
             }
-            th {
-                background-color: #4472C4;
-                color: white;
-                text-align: left;
-                padding: 8px;
-            }
-            td {
-                padding: 8px;
-                border-bottom: 1px solid #ddd;
-            }
-            tr:nth-child(even) {
-                background-color: #f2f2f2;
-            }
-            tr:hover {
-                background-color: #ddd;
-            }
-            .error-msg {
-                color: #D32F2F;
-                font-weight: bold;
+            .header {
+                background-color: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             h2 {
-                color: #333333;
-                font-family: Arial, sans-serif;
+                color: #2c3e50;
+                margin: 0;
+                font-size: 24px;
+            }
+            .info {
+                color: #666;
+                margin: 10px 0;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            th {
+                background-color: #3498db;
+                color: white;
+                font-weight: 600;
+                padding: 12px;
+                text-align: left;
+                font-size: 14px;
+            }
+            td {
+                padding: 12px;
+                border-bottom: 1px solid #eee;
+                font-size: 14px;
+            }
+            tr:nth-child(even) {
+                background-color: #f8f9fa;
+            }
+            tr:hover {
+                background-color: #f1f1f1;
+            }
+            .error-msg {
+                color: #e74c3c;
+                font-weight: 500;
+                background-color: #fde8e8;
+                padding: 4px 8px;
+                border-radius: 4px;
+            }
+            .platform {
+                font-weight: 600;
+                color: #2c3e50;
+            }
+            .group {
+                color: #7f8c8d;
+            }
+            .duration {
+                font-family: monospace;
+                color: #3498db;
+            }
+            @media (max-width: 768px) {
+                table {
+                    display: block;
+                    overflow-x: auto;
+                }
+                th, td {
+                    min-width: 120px;
+                }
             }
         </style>
         """
@@ -215,13 +264,27 @@ def failed_process_alert():
         
         # HTML 헤더
         html_header = f"""
-        <h2>프로세스 실패 알람 리포트</h2>
-        <p>실행 시간: {now}</p>
-        <p>발견된 새로운 실패 건수: {failure_count}</p>
+        <div class="header">
+            <h2>프로세스 실패 알람 리포트</h2>
+            <div class="info">
+                <p>실행 시간: {now}</p>
+                <p>발견된 새로운 실패 건수: <strong>{failure_count}</strong></p>
+            </div>
+        </div>
         """
         
         # 데이터프레임을 HTML 테이블로 변환
-        html_table = df.to_html(index=False, classes='table', escape=False)
+        html_table = df.to_html(
+            index=False, 
+            classes='table', 
+            escape=False,
+            formatters={
+                'error_message': lambda x: f'<span class="error-msg">{x}</span>' if x else '',
+                'platform_type': lambda x: f'<span class="platform">{x}</span>',
+                'group_name': lambda x: f'<span class="group">{x}</span>',
+                'duration_seconds': lambda x: f'<span class="duration">{x:.2f}s</span>'
+            }
+        )
         
         # 최종 HTML 콘텐츠
         return f"{html_style}{html_header}{html_table}"
@@ -260,15 +323,17 @@ def failed_process_alert():
             # process_execution_id만 사용하여 이력 저장
             insert_query = """
             INSERT IGNORE INTO alert_history 
-                (process_execution_id, process_name, end_time)
+                (process_execution_id, platform_type, group_name, process_name, end_time)
             VALUES 
-                (%s, %s, %s)
+                (%s, %s, %s, %s, %s)
             """
             
             hook.run(
                 insert_query, 
                 parameters=(
                     process['id'],  # ProcessExecution 테이블의 id
+                    process['platform_type'],
+                    process['group_name'],
                     process['process_name'],
                     process['end_time']
                 )
