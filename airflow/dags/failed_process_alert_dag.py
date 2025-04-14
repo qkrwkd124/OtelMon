@@ -175,119 +175,74 @@ def failed_process_alert():
         Returns:
             HTML 형식의 문자열
         """
-        # HTML 스타일 지정
-        html_style = """
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 20px;
-            }
-            .header {
-                background-color: #f8f9fa;
-                padding: 20px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            h2 {
-                color: #2c3e50;
-                margin: 0;
-                font-size: 24px;
-            }
-            .info {
-                color: #666;
-                margin: 10px 0;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                border-radius: 8px;
-                overflow: hidden;
-            }
-            th {
-                background-color: #3498db;
-                color: white;
-                font-weight: 600;
-                padding: 12px;
-                text-align: left;
-                font-size: 14px;
-            }
-            td {
-                padding: 12px;
-                border-bottom: 1px solid #eee;
-                font-size: 14px;
-            }
-            tr:nth-child(even) {
-                background-color: #f8f9fa;
-            }
-            tr:hover {
-                background-color: #f1f1f1;
-            }
-            .error-msg {
-                color: #e74c3c;
-                font-weight: 500;
-                background-color: #fde8e8;
-                padding: 4px 8px;
-                border-radius: 4px;
-            }
-            .platform {
-                font-weight: 600;
-                color: #2c3e50;
-            }
-            .group {
-                color: #7f8c8d;
-            }
-            .duration {
-                font-family: monospace;
-                color: #3498db;
-            }
-            @media (max-width: 768px) {
-                table {
-                    display: block;
-                    overflow-x: auto;
-                }
-                th, td {
-                    min-width: 120px;
-                }
-            }
-        </style>
-        """
-        
         # 현재 시간
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # HTML 헤더
-        html_header = f"""
-        <div class="header">
-            <h2>프로세스 실패 알람 리포트</h2>
-            <div class="info">
-                <p>실행 시간: {now}</p>
-                <p>발견된 새로운 실패 건수: <strong>{failure_count}</strong></p>
+        html_content = f"""
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2 style="color: #2c3e50; margin: 0; font-size: 24px;">프로세스 실패 알람 리포트</h2>
+                <div style="color: #666; margin: 10px 0;">
+                    <p style="margin: 5px 0;">실행 시간: {now}</p>
+                    <p style="margin: 5px 0;">발견된 새로운 실패 건수: <strong>{failure_count}</strong></p>
+                </div>
             </div>
-        </div>
         """
         
+        # 테이블 스타일 정의
+        table_style = 'width: 100%; border-collapse: collapse; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;'
+        th_style = 'background-color: #3498db; color: white; font-weight: 600; padding: 12px; text-align: left; font-size: 14px;'
+        td_style = 'padding: 12px; border-bottom: 1px solid #eee; font-size: 14px;'
+        tr_even_style = 'background-color: #f8f9fa;'
+        
+        # 데이터프레임 컬럼 이름 한글화
+        df = df.rename(columns={
+            'id': '실행 ID',
+            'platform_type': '플랫폼',
+            'group_name': '그룹명',
+            'process_name': '프로세스명',
+            'start_time': '시작 시간',
+            'end_time': '종료 시간',
+            'error_message': '에러 메시지',
+            'duration_seconds': '소요 시간(초)'
+        })
+        
         # 데이터프레임을 HTML 테이블로 변환
-        html_table = df.to_html(
-            index=False, 
-            classes='table', 
-            escape=False,
-            formatters={
-                'error_message': lambda x: f'<span class="error-msg">{x}</span>' if x else '',
-                'platform_type': lambda x: f'<span class="platform">{x}</span>',
-                'group_name': lambda x: f'<span class="group">{x}</span>',
-                'duration_seconds': lambda x: f'<span class="duration">{x:.2f}s</span>'
-            }
-        )
+        html_table = '<table style="{}">\n'.format(table_style)
+        
+        # 헤더 추가
+        html_table += '<thead>\n<tr>\n'
+        for col in df.columns:
+            html_table += f'<th style="{th_style}">{col}</th>\n'
+        html_table += '</tr>\n</thead>\n'
+        
+        # 데이터 행 추가
+        html_table += '<tbody>\n'
+        for idx, row in df.iterrows():
+            row_style = tr_even_style if idx % 2 == 1 else ''
+            html_table += f'<tr style="{row_style}">\n'
+            for col in df.columns:
+                cell_content = row[col]
+                if col == '에러 메시지' and cell_content:
+                    cell_style = td_style + ' background-color: #fde8e8; color: #e74c3c; border-radius: 4px;'
+                    cell_content = f'<span style="padding: 4px 8px; display: inline-block;">{cell_content}</span>'
+                elif col == '플랫폼':
+                    cell_style = td_style + ' font-weight: 600; color: #2c3e50;'
+                elif col == '그룹명':
+                    cell_style = td_style + ' color: #7f8c8d;'
+                elif col == '소요 시간(초)':
+                    cell_style = td_style + ' font-family: monospace; color: #3498db;'
+                    cell_content = f'{float(cell_content):.2f}s'
+                else:
+                    cell_style = td_style
+                html_table += f'<td style="{cell_style}">{cell_content}</td>\n'
+            html_table += '</tr>\n'
+        html_table += '</tbody>\n</table>'
         
         # 최종 HTML 콘텐츠
-        return f"{html_style}{html_header}{html_table}"
+        html_content += html_table + '</div>'
+        return html_content
     
     def _send_email_alert(html_content: str) -> None:
         """이메일 알람을 전송합니다.
