@@ -153,7 +153,7 @@ def traced():
                     
                 except Exception as e:
                     # 오류 정보 기록
-                    span.set_attribute("etl.error", traceback.format_exc())
+                    span.set_attribute("etl.error", str(e))
                     span.set_attribute("etl.error_type", type(e).__name__)
                     span.set_attribute("etl.stacktrace", traceback.format_exc())
                     # span.set_attribute("etl.success", False)

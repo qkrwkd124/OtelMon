@@ -202,7 +202,7 @@ def traced_task(task_group: str = "default", **kwargs):
                     except Exception as e:
                         # 오류 정보 기록
                         error_msg = traceback.format_exc()
-                        span.set_attribute("etl.error", error_msg)
+                        span.set_attribute("etl.error", str(e))
                         span.set_attribute("etl.error_type", type(e).__name__)
                         span.set_attribute("etl.stacktrace", error_msg)
                         
