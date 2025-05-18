@@ -58,7 +58,20 @@ class ProcessExecutionService(BaseDBService):
                     error_type=execution_data.get('error_type'),
                     start_time=execution_data['start_time'],
                     end_time=execution_data['end_time'],
-                    duration_seconds=execution_data['duration_seconds']
+                    duration_seconds=execution_data['duration_seconds'],
+                    
+                    # 소스 시스템 정보
+                    source_system_type=execution_data.get('source_system_type'),
+                    source_system_name=execution_data.get('source_system_name'),
+                    source_endpoint=execution_data.get('source_endpoint'),
+                    source_object_name=execution_data.get('source_object_name'),
+                    source_count=execution_data.get('source_count'),
+                    # 대상 시스템 정보
+                    target_system_type=execution_data.get('target_system_type'),
+                    target_system_name=execution_data.get('target_system_name'),
+                    target_endpoint=execution_data.get('target_endpoint'),
+                    target_object_name=execution_data.get('target_object_name'),
+                    target_count=execution_data.get('target_count')
                 )
                 
                 session.add(execution)

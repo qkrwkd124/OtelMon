@@ -75,9 +75,25 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
     error_message = attributes.get("etl.error", None)
     error_type = attributes.get("etl.error_type", None)
     
-    # trace와 span ID
-    # trace_id = decode_trace_id(span.get("traceId", ""))
-    # span_id = decode_trace_id(span.get("spanId", ""))
+    # 소스 시스템 정보 추출
+    source_system_type = attributes.get("etl.source_system_type",None)
+    source_system_name = attributes.get("etl.source_system_name",None)
+    source_endpoint = attributes.get("etl.source_endpoint",None)
+    source_object_name = attributes.get("etl.source_object_name",None)
+    source_count = attributes.get("etl.source_count",None)
+    
+    # 타겟 시스템 정보 추출
+    target_system_type = attributes.get("etl.target_system_type",None)
+    target_system_name = attributes.get("etl.target_system_name",None)
+    target_endpoint = attributes.get("etl.target_endpoint",None)
+    target_object_name = attributes.get("etl.target_object_name",None)
+    target_count = attributes.get("etl.target_count",None)
+    
+    # 문자열 count를 정수로 변환
+    if isinstance(source_count, str) and source_count.isdigit():
+        source_count = int(source_count)
+    if isinstance(target_count, str) and target_count.isdigit():
+        target_count = int(target_count)
     
     # 결과 데이터
     return {
@@ -86,14 +102,21 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
         "group_name": group_name,
         "process_name": process_name,
         "success": success,
-        # "attributes": attributes,
         "error_message": error_message,
         "error_type": error_type,
+        "source_system_type": source_system_type,
+        "source_system_name": source_system_name,
+        "source_endpoint": source_endpoint,
+        "source_object_name": source_object_name,
+        "source_count": source_count,
+        "target_system_type": target_system_type,
+        "target_system_name": target_system_name,
+        "target_endpoint": target_endpoint,
+        "target_object_name": target_object_name,
+        "target_count": target_count,
         "start_time": start_time,
         "end_time": end_time,
-        "duration_seconds": duration,
-        # "trace_id": trace_id,
-        # "span_id": span_id
+        "duration_seconds": duration
     }
 
 def extract_process_executions(trace_data: Dict[str, Any]) -> List[Dict[str, Any]]:
