@@ -1,7 +1,7 @@
 import time
 import traceback
 from datetime import datetime
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from functools import wraps
 from typing import Dict, Any, Callable, Optional
 from pathlib import Path
@@ -46,8 +46,8 @@ class Result:
         처리한 결과 건 수입니다.
     """
     result: Dict[str, Any]
-    trace_attributes: Dict[str, Any]
     process_count: int = 0
+    trace_attributes: Dict[str, Any] = field(default_factory=dict)
     source_info: Optional[SimpleSystemInfo] = None
     target_info: Optional[SimpleSystemInfo] = None
 
