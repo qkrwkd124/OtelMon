@@ -21,32 +21,6 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 import logging
 import sys
 
-# 로그 경로를 절대 경로로 설정
-# log_path = "/opt/airflow/logs/trace_log.log"
-
-# 로그 파일 핸들러 설정
-# try:
-#     file_handler = logging.FileHandler(log_path)
-#     file_handler.setLevel(logging.DEBUG)  # DEBUG 레벨로 설정
-#     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#     file_handler.setFormatter(formatter)
-
-#     # stdout 핸들러 추가
-#     stdout_handler = logging.StreamHandler(sys.stdout)
-#     stdout_handler.setLevel(logging.DEBUG)
-#     stdout_handler.setFormatter(formatter)
-
-#     # 로그 설정
-#     logger = logging.getLogger('trace_log')
-#     logger.setLevel(logging.DEBUG)  # DEBUG 레벨로 설정
-#     logger.addHandler(file_handler)
-#     logger.addHandler(stdout_handler)
-    
-#     logger.debug("로그 핸들러 설정 완료")
-# except Exception as e:
-#     print(f"로그 설정 오류: {str(e)}")
-#     traceback.print_exc()
-
 
 @dataclass
 class Result:
