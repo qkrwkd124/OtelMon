@@ -71,7 +71,10 @@ class ProcessExecutionService(BaseDBService):
                     target_system_name=execution_data.get('target_system_name'),
                     target_endpoint=execution_data.get('target_endpoint'),
                     target_object_name=execution_data.get('target_object_name'),
-                    target_count=execution_data.get('target_count')
+                    target_count=execution_data.get('target_count'),
+
+                    #자동계측 데이터
+                    auto_json=execution_data.get('auto_json')
                 )
                 
                 session.add(execution)

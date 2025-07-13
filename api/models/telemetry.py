@@ -18,18 +18,21 @@ class ProcessExecution(Base):
     error_type = Column(String(100), nullable=True)
 
     # 소스 시스템 정보
-    source_system_type = Column(String(50), nullable=True, comment='출처시스템타입')
-    source_system_name = Column(String(100), nullable=True, comment='출처시스템명')
-    source_endpoint = Column(String(500), nullable=True, comment='출처종료포인트명명')
-    source_object_name = Column(String(200), nullable=True, comment='출처시스템객체명')
-    source_count = Column(Integer, nullable=True, comment='출처시스템처리건수')
+    source_system_type = Column(String(50), comment='출처시스템타입')
+    source_system_name = Column(String(100), comment='출처시스템명')
+    source_endpoint = Column(String(500), comment='출처종료포인트명명')
+    source_object_name = Column(String(200), comment='출처시스템객체명')
+    source_count = Column(Integer, comment='출처시스템처리건수')
 
     # 대상 시스템 정보
-    target_system_type = Column(String(50), nullable=True, comment='대상시스템타입')
-    target_system_name = Column(String(100), nullable=True, comment='대상시스템명')
-    target_endpoint = Column(String(500), nullable=True, comment='대상종료포인트명명')
-    target_object_name = Column(String(200), nullable=True, comment='대상시스템객체명')
-    target_count = Column(Integer, nullable=True, comment='대상시스템처리건수')
+    target_system_type = Column(String(50), comment='대상시스템타입')
+    target_system_name = Column(String(100), comment='대상시스템명')
+    target_endpoint = Column(String(500), comment='대상종료포인트명명')
+    target_object_name = Column(String(200), comment='대상시스템객체명')
+    target_count = Column(Integer, comment='대상시스템처리건수')
+    
+    # 자동계측 속성
+    auto_json = Column(String(4000), comment='자동계측속성')
 
     start_time = Column(DateTime, nullable=False, index=True)
     end_time = Column(DateTime, nullable=False)

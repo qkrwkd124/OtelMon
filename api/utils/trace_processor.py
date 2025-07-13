@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 import json
 
-def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, str]) -> Optional[Dict[str, Any]]:
+def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, str], auto_instrumentation_spans: Dict[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
     """스팬 데이터를 ProcessExecution 모델 포맷으로 변환"""
     # 필수 필드 확인
     if not all(key in span for key in ["name", "startTimeUnixNano", "endTimeUnixNano"]):
@@ -95,8 +95,44 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
     if isinstance(target_count, str) and target_count.isdigit():
         target_count = int(target_count)
     
+    # 자동계측 데이터 추출 (같은 trace ID를 가진 자동계측 스팬들 찾기)
+    auto_json = None
+    if "traceId" in span:
+        trace_id = span["traceId"]
+        if trace_id in auto_instrumentation_spans:
+            auto_spans = auto_instrumentation_spans[trace_id]
+            # 자동계측 스팬들의 주요 정보를 JSON으로 변환
+
+            for auto_span in auto_spans:
+                # span_data = {
+                #     "span_id": auto_span.get("spanId"),
+                #     "name": auto_span.get("name"),
+                #     "kind": auto_span.get("kind", "INTERNAL")
+                # }
+                
+                # 속성 추가
+                span_attributes = {}
+                for attr in auto_span.get("attributes", []):
+                    key = attr.get("key")
+                    value_obj = attr.get("value", {})
+                    if "stringValue" in value_obj:
+                        span_attributes[key] = value_obj["stringValue"]
+                    elif "intValue" in value_obj:
+                        span_attributes[key] = int(value_obj["intValue"])
+                    elif "boolValue" in value_obj:
+                        span_attributes[key] = bool(value_obj["boolValue"])
+                    elif "doubleValue" in value_obj:
+                        span_attributes[key] = float(value_obj["doubleValue"])
+                
+                # span_data["attributes"] = span_attributes
+                
+                # auto_spans_data.append(span_data)
+            
+            if span_attributes:
+                auto_json = json.dumps(span_attributes)
+
     # 결과 데이터
-    return {
+    result = {
         "host_name": host_name,
         "platform_type": platform_type,
         "group_name": group_name,
@@ -118,11 +154,47 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
         "end_time": end_time,
         "duration_seconds": duration
     }
+    
+    # 자동계측 데이터가 있으면 추가
+    if auto_json:
+        result["auto_json"] = auto_json
+    
+    return result
 
 def extract_process_executions(trace_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """OpenTelemetry 트레이스 데이터에서 프로세스 실행 정보 추출"""
     executions = []
     
+    # 자동계측 스팬을 trace_id별로 먼저 수집
+    auto_instrumentation_spans = {}
+    
+    # 먼저 전체 trace 데이터에서 자동계측 스팬 찾기
+    for resource_span in trace_data.get("resourceSpans", []):
+        # 리소스 속성 추출
+        resource_attributes = {}
+        for attr in resource_span.get("resource", {}).get("attributes", []):
+            key = attr.get("key")
+            value_obj = attr.get("value", {})
+            if "stringValue" in value_obj:
+                resource_attributes[key] = value_obj["stringValue"]
+    
+        for scope_span in resource_span.get("scopeSpans", []):
+            for span in scope_span.get("spans", []):
+                # 수동계측 스팬 확인 (ETL 속성이 없는 스팬은 자동계측으로 간주)
+                is_manual_instrumentation = False
+                for attr in span.get("attributes", []):
+                    if attr.get("key", "").startswith("etl."):
+                        is_manual_instrumentation = True
+                        break
+                
+                # 자동계측 스팬이면 trace_id별로 저장
+                if not is_manual_instrumentation and "traceId" in span:
+                    trace_id = span["traceId"]
+                    if trace_id not in auto_instrumentation_spans:
+                        auto_instrumentation_spans[trace_id] = []
+                    auto_instrumentation_spans[trace_id].append(span)
+    
+    # 이제 수동계측 스팬을 처리하며 자동계측 데이터와 연결
     for resource_span in trace_data.get("resourceSpans", []):
         # 리소스 속성 추출
         resource_attributes = {}
@@ -135,12 +207,11 @@ def extract_process_executions(trace_data: Dict[str, Any]) -> List[Dict[str, Any
         # 각 스코프의 스팬 처리
         for scope_span in resource_span.get("scopeSpans", []):
             for span in scope_span.get("spans", []):
-                execution_data = span_to_execution_data(span, resource_attributes)
+                execution_data = span_to_execution_data(span, resource_attributes, auto_instrumentation_spans)
                 if execution_data:
                     executions.append(execution_data)
     
     return executions
-
 
 if __name__ == "__main__":
     with open("/home/younpark/OtelMon/api/utils/test.json", "r") as f:
