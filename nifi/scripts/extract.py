@@ -27,9 +27,16 @@ def extract(*args, **kwargs) :
     logging.info(f"group_name : {kwargs.get('group_name')}")
     logging.info(f"process_name : {kwargs.get('process_name')}")
 
-    return nifi.Result(
+    return trace_log.Result(
         result={},
-        process_count=row_count
+        process_count=row_count,
+        source_info=trace_log.SimpleSystemInfo(
+            system_type="http",
+            system_name="rest api",
+            endpoint=url,
+            object_name="공공데이터포털",
+            count=row_count
+        )
     )
 
 if __name__ == "__main__":
