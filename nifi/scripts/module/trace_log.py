@@ -174,7 +174,7 @@ def traced(group_name="ETL NiFi"):
         @wraps(func)
         def wrapper(*args, **kwargs):
             tracer = _init_tracer()
-            #_init_instrumentation()
+            _init_instrumentation()
             
             with tracer.start_as_current_span(func.__name__) as span:
                 start_time = datetime.now()
