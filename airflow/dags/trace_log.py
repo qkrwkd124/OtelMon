@@ -41,9 +41,10 @@ class Result:
     process_count: int = 1
 
 
+
 # 전역 변수로 선언
-_tracer = None
-_meter = None
+_tracer_initialized = False 
+# _meter = None
 _instrumented = False  # 자동 계측 초기화 여부 플래그
 _span_processor = None
 
@@ -57,41 +58,58 @@ def _init_instrumentation():
     
     # requests 자동 계측
     RequestsInstrumentor().instrument()
-    
     _instrumented = True
 
 
 def _init_tracer():
-    """OpenTelemetry 트레이서 초기화"""
-    global _tracer, _span_processor
-    if _tracer is not None:
-        # logger.debug("트레이서 이미 초기화됨")
-        return _tracer
+    """
+    OpenTelemetry 트레이서 초기화 (한 번만 실행)
+    
+    Returns:
+        Tracer: OpenTelemetry 트레이서 인스턴스
+    """
+
+    global _tracer_initialized, _span_processor
+
+    # 이미 초기화되었다면 기존 tracer 반환
+    if _tracer_initialized:
+        return trace.get_tracer(__name__)
         
-    resource = Resource.create(attributes={"service.name": "airflow_tracer", "service.version": "1.0.0","host.name": os.getenv('REAL_HOSTNAME','cpoetl'), "timezone": "Asia/Seoul"})
+    resource = Resource.create(attributes={
+        "service.name": "airflow_tracer",
+        "service.version": "1.0.0",
+        "host.name": os.getenv('REAL_HOSTNAME','cpoetl'),
+        "timezone": "Asia/Seoul"
+        })
+    
     tracer_provider = TracerProvider(resource=resource)
-    # _span_processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"))
-    _span_processor = SimpleSpanProcessor(OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"))
+    _span_processor = BatchSpanProcessor(
+        OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"),
+        max_queue_size=2048,            # 큐 크기
+        schedule_delay_millis=5000,     # 5초마다 배치 전송 (기본 30초보다 빠름)
+        max_export_batch_size=512,      # 배치 크기
+        export_timeout_millis=30000     # 전송 타임아웃 30초
+    )
+    # _span_processor = SimpleSpanProcessor(OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"))
     tracer_provider.add_span_processor(_span_processor)
+
+    # 전역 TracerProvider 설정 (OpenTelemetry 내부 싱글톤)
     trace.set_tracer_provider(tracer_provider)
-    
-    _tracer = trace.get_tracer(__name__)
-    # logger.debug("트레이서 초기화 완료")
-    return _tracer
+
+    _tracer_initialized = True
+
+    # 전역 TracerProvider에서 tracer 가져오기
+    return trace.get_tracer(__name__)
 
 
-def _init_meter():
-    """OpenTelemetry 메트릭 초기화"""
-    global _meter
-    if _meter is not None:
-        return _meter
-    
-    otlp_metric_exporter = OTLPMetricExporter(endpoint="http://otelcol:4317/v1/metrics")
-    metric_reader = PeriodicExportingMetricReader(otlp_metric_exporter)
-    provider = MeterProvider(metric_readers=[metric_reader])
-    
-    _meter = provider.get_meter(__name__)
-    return _meter
+def force_flush():
+    """
+    배치 처리 시 강제로 span 전송
+    중요한 태스크나 에러 발생 시 즉시 전송하고 싶을 때 사용
+    """
+    global _span_processor
+    if _span_processor:
+        _span_processor.force_flush()
 
 
 def traced_task(task_group: str = "default", **kwargs):
@@ -107,21 +125,9 @@ def traced_task(task_group: str = "default", **kwargs):
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
+                # OpenTelemetry 초기화
                 tracer = _init_tracer()
-                meter = _init_meter()
                 _init_instrumentation()
-                
-                # 메트릭 카운터와 히스토그램 생성
-                process_counter = meter.create_counter(
-                    name="etl_process_count",
-                    description="ETL 프로세스 실행 횟수",
-                    unit="1"
-                )
-                duration_histogram = meter.create_histogram(
-                    name="etl_duration",
-                    description="ETL 프로세스 실행 시간",
-                    unit="s"
-                )
                 
                 with tracer.start_as_current_span(func.__name__) as span:
                     try:
@@ -158,10 +164,6 @@ def traced_task(task_group: str = "default", **kwargs):
                             for key, value in result.trace_metric.items():
                                 span.set_attribute(f"{key}", str(value))
                         
-                        # 메트릭 기록
-                        process_counter.add(1, {"status": "success"})
-                        duration_histogram.record(duration)
-                        
                         # 명시적으로 성공 상태 설정
                         span.set_status(StatusCode.OK,"성공적으로 완료되었습니다.")
                         
@@ -179,9 +181,6 @@ def traced_task(task_group: str = "default", **kwargs):
                         span.set_attribute("etl.error", str(e))
                         span.set_attribute("etl.error_type", type(e).__name__)
                         span.set_attribute("etl.stacktrace", error_msg)
-                        
-                        # 오류 메트릭 기록
-                        process_counter.add(1, {"status": "error"})
                         
                         # 오류 상태 설정
                         span.set_status(Status(StatusCode.ERROR, str(e)))
