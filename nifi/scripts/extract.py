@@ -5,7 +5,7 @@ import module.nifi as nifi
 import module.trace_log as trace_log
 
 @nifi.task(mode="production")
-@trace_log.traced()
+@trace_log.traced_nifi()
 def extract(*args, **kwargs) :
     logging.info("===== extract start =====")
 
@@ -21,7 +21,8 @@ def extract(*args, **kwargs) :
     logging.info(response.status_code)
     logging.info(response.text)
 
-    row_count = response.json()['response']['body']['totalCount']
+    # row_count = response.json()['response']['body']['totalCount']
+    row_count = 10
     logging.info(args)
     logging.info(kwargs)
     logging.info(f"group_name : {kwargs.get('group_name')}")
