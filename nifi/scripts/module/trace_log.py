@@ -7,6 +7,7 @@ from typing import Dict, Any, Callable, Optional
 from pathlib import Path
 import inspect
 import os
+from enum import Enum
 
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
@@ -16,6 +17,12 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import Span
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+
+class Platform(Enum):
+    """지원되는 플랫폼"""
+    NIFI = "NiFi"
+    AIRFLOW = "Airflow"
 
 @dataclass
 class SimpleSystemInfo:
@@ -66,9 +73,18 @@ class Result:
             result=self.result,
             process_count=self.process_count
         )
+    
+    def to_airflow_result(self):
+        """
+        Airflow TaskFlow API에서 사용할 수 있는 딕셔너리 형태로 변환
+        
+        Returns:
+            Dict[str, Any]: Airflow에서 사용할 결과 딕셔너리
+        """
+        return self.result
 
 # 전역 변수로 선언
-_tracer = None
+_tracer_initialized = False 
 _instrumented = False
 
 # 설정 상수
@@ -78,15 +94,13 @@ OTEL_ENDPOINT = "http://otelcol:4317/v1/traces"
 
 
 def _init_instrumentation():
-    """
-    자동 계측(Automatic Instrumentation) 설정
-    
-    이미 초기화되었다면 다시 실행하지 않도록 플래그를 사용
-    """
+    """자동 계측(Automatic Instrumentation) 설정"""
     global _instrumented
     if _instrumented:
+        # 이미 한 번 초기화했다면 중복 호출 방지
         return
     
+    # requests 자동 계측
     RequestsInstrumentor().instrument()
     _instrumented = True
 
@@ -98,9 +112,10 @@ def _init_tracer():
     Returns:
         트레이서 객체
     """
-    global _tracer
-    if _tracer is not None:
-        return _tracer
+    global _tracer_initialized
+    # 이미 초기화되었다면 기존 tracer 반환
+    if _tracer_initialized:
+        return trace.get_tracer(__name__)
     
     # 리소스 및 트레이서 설정    
     resource = Resource.create(attributes={
@@ -111,21 +126,33 @@ def _init_tracer():
     })
     
     tracer_provider = TracerProvider(resource=resource)
-    span_processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=OTEL_ENDPOINT))
+    span_processor = BatchSpanProcessor(
+        OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"),
+        max_queue_size=2048,            # 큐 크기
+        schedule_delay_millis=5000,     # 5초마다 배치 전송 (기본 30초보다 빠름)
+        max_export_batch_size=512,      # 배치 크기
+        export_timeout_millis=30000     # 전송 타임아웃 30초
+    )
     tracer_provider.add_span_processor(span_processor)
+    # 전역 TracerProvider 설정 (OpenTelemetry 내부 싱글톤)
     trace.set_tracer_provider(tracer_provider)
-    
-    _tracer = trace.get_tracer(__name__)
-    return _tracer
+
+    _tracer_initialized = True
+
+    # 전역 TracerProvider에서 tracer 가져오기
+    return trace.get_tracer(__name__)
 
 
 def _record_span_attributes(span: Span, result: Result):
     """
     스팬에 결과 속성 기록
     
-    Args:
-        span: 현재 스팬 객체
-        result: 함수 실행 결과
+    Arguments:
+    ----------
+    span : Span
+        현재 스팬 객체
+    result : Result
+        함수 실행 결과
     """
     if isinstance(result, Result):
         span.set_attribute("etl.process_count", result.process_count)
@@ -135,6 +162,15 @@ def _record_span_attributes(span: Span, result: Result):
 def _record_system_info(span: Span,  source: Optional[SimpleSystemInfo]=None, target: Optional[SimpleSystemInfo]=None):
     """
     시스템 정보 기록
+    
+    Arguments:
+    ----------
+    span : Span
+        현재 스팬 객체
+    source : Optional[SimpleSystemInfo]
+        소스 시스템 정보
+    target : Optional[SimpleSystemInfo]
+        타겟 시스템 정보
     """
     if source:
         for key, value in asdict(source).items():
@@ -158,9 +194,10 @@ def _record_error(span: Span, error: Exception):
     span.set_attribute("etl.error_type", type(error).__name__)
     span.set_attribute("etl.stacktrace", traceback.format_exc())
     span.set_status(Status(StatusCode.ERROR, str(error)))
+    span.record_exception(error)
 
 
-def traced(group_name="ETL NiFi"):
+def traced(group_name="ETL NiFi", platform:Platform = Platform.NIFI):
     """
     OpenTelemetry 트레이싱 데코레이터
     
@@ -182,7 +219,7 @@ def traced(group_name="ETL NiFi"):
                 # 기본 속성 설정
                 func_filename = Path(inspect.getfile(func)).name
                 process_name = kwargs.get("nifi_process_name", kwargs.get("process_name", func.__name__))
-                span.set_attribute("etl.platform", "NiFi")
+                span.set_attribute("etl.platform", platform.value)
                 span.set_attribute("etl.group_name", kwargs.get("group_name", group_name))
                 span.set_attribute("etl.process_name", process_name)
                 span.set_attribute("etl.script_name", func_filename)
@@ -198,10 +235,14 @@ def traced(group_name="ETL NiFi"):
                         _record_system_info(span, result.source_info, result.target_info)
                         
                         # trace_log.Result를 nifi.Result로 변환
-                        nifi_result = result.to_nifi_result()
+
+                        if platform == Platform.NIFI:
+                            result = result.to_nifi_result()
+                        elif platform == Platform.AIRFLOW:
+                            result = result.to_airflow_result()
                         
                         span.set_status(StatusCode.OK)
-                        return nifi_result
+                        return result
                     else:
                         span.set_status(StatusCode.OK)
                         return result
@@ -220,3 +261,32 @@ def traced(group_name="ETL NiFi"):
         
         return wrapper
     return decorator
+
+
+# 플랫폼별 편의 데코레이터
+def traced_nifi(group_name: str = "ETL NIFI"):
+    """
+    NiFi 전용 트레이싱 데코레이터
+    
+    Arguments:
+    ----------
+    group_name : str
+        작업이 속한 그룹 이름
+    force_flush_on_error : bool
+        에러 발생 시 강제로 span 전송할지 여부
+    """
+    return traced(group_name=group_name, platform=Platform.NIFI)
+
+
+def traced_airflow(task_group: str = "ETL Airflow"):
+    """
+    Airflow 전용 트레이싱 데코레이터
+    
+    Arguments:
+    ----------
+    task_group : str
+        작업이 속한 그룹 이름
+    force_flush_on_error : bool
+        에러 발생 시 강제로 span 전송할지 여부
+    """
+    return traced(group_name=task_group, platform=Platform.AIRFLOW)
