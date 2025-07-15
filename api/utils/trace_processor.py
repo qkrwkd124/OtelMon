@@ -136,7 +136,7 @@ def span_to_execution_data(
         if trace_id in auto_instrumentation_spans:
             auto_spans = auto_instrumentation_spans[trace_id]
             # 자동계측 스팬들의 주요 정보를 JSON으로 변환
-
+            auto_spans_data = []
             for auto_span in auto_spans:
                 # span_data = {
                 #     "span_id": auto_span.get("spanId"),
@@ -158,9 +158,7 @@ def span_to_execution_data(
                     elif "doubleValue" in value_obj:
                         span_attributes[key] = float(value_obj["doubleValue"])
                 
-                # span_data["attributes"] = span_attributes
-                
-                # auto_spans_data.append(span_data)
+                auto_spans_data.append(span_attributes)
             
             if span_attributes:
                 auto_json = json.dumps(span_attributes)
