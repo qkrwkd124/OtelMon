@@ -91,7 +91,7 @@ def _init_instrumentation():
     
     # requests 자동 계측
     RequestsInstrumentor().instrument()
-    # SQLAlchemyInstrumentor().instrument()
+    SQLAlchemyInstrumentor().instrument()
     _instrumented = True
 
 
