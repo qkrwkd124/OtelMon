@@ -15,7 +15,7 @@ from airflow.operators.email import EmailOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 
 # 플러그인 임포트
-from trace_log import traced_task, Result
+from trace_log import traced_airflow, Result
 
 # SQL 파일 경로 설정
 SQL_DIR = Path(__file__).parent / 'sql'
@@ -62,7 +62,7 @@ def failed_process_alert():
     """DB에서 실패한 프로세스를 폴링하여 이메일 알람 전송하는 DAG."""
     
     @task(task_id='create_alert_history_table')
-    @traced_task(task_group="failed_process_alert")
+    @traced_airflow(task_group="failed_process_alert")
     def create_alert_history_table() -> Dict[str, Any]:
         """알람 이력 테이블이 없으면 생성합니다."""
         hook = MySqlHook(mysql_conn_id=CONN_ID)
@@ -70,10 +70,12 @@ def failed_process_alert():
         create_table_query = read_sql_file('create_alert_history.sql')
         hook.run(create_table_query)
         
-        return {"hook_conn_id": CONN_ID}
+        return Result(
+            result={"hook_conn_id": CONN_ID}
+        )
     
     @task(task_id='get_new_failed_processes')
-    @traced_task(task_group="failed_process_alert")
+    @traced_airflow(task_group="failed_process_alert")
     def get_new_failed_processes(context: Dict[str, Any]) -> Dict[str, Any]:
         """DB에서 아직 알람을 보내지 않은 실패한 프로세스를 조회합니다."""
         hook = MySqlHook(mysql_conn_id=CONN_ID)
@@ -97,24 +99,26 @@ def failed_process_alert():
         
         result = Result(
             result={"failed_processes": df.to_dict(orient='records')},
-            trace_metric={},
             process_count=process_count
         )
         
-        return result.result
+        return result
     
     @task(task_id='generate_html_report')
-    @traced_task(task_group="failed_process_alert")
+    @traced_airflow(task_group="failed_process_alert")
     def generate_html_report(context: Dict[str, Any]) -> Dict[str, Any]:
         """HTML 테이블 형식의 리포트를 생성합니다."""
         failed_processes = context.get("failed_processes", [])
         
         if not failed_processes:
-            return {
-                "html_content": "", 
-                "has_failures": False, 
-                "failed_processes": []
-            }
+            return Result(
+                result={
+                    "html_content": "", 
+                    "has_failures": False, 
+                    "failed_processes": []
+                },
+                process_count=0
+            )
         
         # 데이터프레임 생성 및 형식 지정
         df = pd.DataFrame(failed_processes)
@@ -133,14 +137,13 @@ def failed_process_alert():
                 "has_failures": True, 
                 "failed_processes": failed_processes
             },
-            trace_metric={},
             process_count=len(failed_processes)
         )
         
-        return result.result
+        return result
     
     @task(task_id='send_email_task')
-    @traced_task(task_group="failed_process_alert")
+    @traced_airflow(task_group="failed_process_alert")
     def prepare_and_send_email(context: Dict[str, Any]) -> Dict[str, Any]:
         """이메일 알림을 준비하고 전송합니다."""
         html_content = context.get("html_content", "")
@@ -149,7 +152,10 @@ def failed_process_alert():
         
         if not has_failures:
             print("새로운 실패 프로세스가 없습니다. 이메일을 전송하지 않습니다.")
-            return {"email_sent": False}
+            return Result(
+                result={"email_sent": False},
+                process_count=0
+            )
         
         # 이메일 전송
         _send_email_alert(html_content)
@@ -159,11 +165,10 @@ def failed_process_alert():
         
         result = Result(
             result={"email_sent": True},
-            trace_metric={},
             process_count=1
         )
         
-        return result.result
+        return result
     
     def _create_html_content(df: pd.DataFrame, failure_count: int) -> str:
         """HTML 테이블 형식의 콘텐츠를 생성합니다.

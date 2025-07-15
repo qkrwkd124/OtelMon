@@ -6,6 +6,7 @@ from typing import TypeVar, Type, List, Dict, Any, Generic
 
 from logger import get_logger
 from models.telemetry import Base, ProcessExecution
+from utils.trace_processor import ProcessExecutionData
 
 logger = get_logger(__name__)
 
@@ -44,37 +45,38 @@ class ProcessExecutionService(BaseDBService):
         # 테이블 생성
         Base.metadata.create_all(self.engine)
     
-    async def save_execution(self, execution_data: dict) -> int:
+    async def save_execution(self, execution_data: ProcessExecutionData) -> int:
         """프로세스 실행 정보를 데이터베이스에 저장"""
         try:
             with self.get_session() as session:
                 execution = ProcessExecution(
-                    host_name=execution_data['host_name'],
-                    platform_type=execution_data['platform_type'],
-                    group_name=execution_data['group_name'],
-                    process_name=execution_data['process_name'],
-                    success=execution_data['success'],
-                    error_message=execution_data.get('error_message'),
-                    error_type=execution_data.get('error_type'),
-                    start_time=execution_data['start_time'],
-                    end_time=execution_data['end_time'],
-                    duration_seconds=execution_data['duration_seconds'],
+                    host_name=execution_data.host_name,
+                    platform_type=execution_data.platform_type,
+                    group_name=execution_data.group_name,
+                    process_name=execution_data.process_name,
+                    script_name=execution_data.script_name,
+                    success=execution_data.success,
+                    error_message=execution_data.error_message,
+                    error_type=execution_data.error_type,
+                    start_time=execution_data.start_time,
+                    end_time=execution_data.end_time,
+                    duration_seconds=execution_data.duration_seconds,
                     
                     # 소스 시스템 정보
-                    source_system_type=execution_data.get('source_system_type'),
-                    source_system_name=execution_data.get('source_system_name'),
-                    source_endpoint=execution_data.get('source_endpoint'),
-                    source_object_name=execution_data.get('source_object_name'),
-                    source_count=execution_data.get('source_count'),
+                    source_system_type=execution_data.source_system_type,
+                    source_system_name=execution_data.source_system_name,
+                    source_endpoint=execution_data.source_endpoint,
+                    source_object_name=execution_data.source_object_name,
+                    source_count=execution_data.source_count,
                     # 대상 시스템 정보
-                    target_system_type=execution_data.get('target_system_type'),
-                    target_system_name=execution_data.get('target_system_name'),
-                    target_endpoint=execution_data.get('target_endpoint'),
-                    target_object_name=execution_data.get('target_object_name'),
-                    target_count=execution_data.get('target_count'),
+                    target_system_type=execution_data.target_system_type,
+                    target_system_name=execution_data.target_system_name,
+                    target_endpoint=execution_data.target_endpoint,
+                    target_object_name=execution_data.target_object_name,
+                    target_count=execution_data.target_count,
 
                     #자동계측 데이터
-                    auto_json=execution_data.get('auto_json')
+                    auto_json=execution_data.auto_json
                 )
                 
                 session.add(execution)

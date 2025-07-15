@@ -1,8 +1,41 @@
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Tuple
 import json
+from dataclasses import dataclass
 
-def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, str], auto_instrumentation_spans: Dict[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
+@dataclass
+class ProcessExecutionData:
+    """ETL 프로세스 실행 데이터 모델"""
+    host_name: str
+    platform_type: str
+    group_name: str
+    process_name: str
+    script_name: str
+    success: str
+    start_time: datetime
+    end_time: datetime
+    duration_seconds: float
+    
+    # 선택적 필드들
+    error_message: Optional[str] = None
+    error_type: Optional[str] = None
+    source_system_type: Optional[str] = None
+    source_system_name: Optional[str] = None
+    source_endpoint: Optional[str] = None
+    source_object_name: Optional[str] = None
+    source_count: Optional[int] = None
+    target_system_type: Optional[str] = None
+    target_system_name: Optional[str] = None
+    target_endpoint: Optional[str] = None
+    target_object_name: Optional[str] = None
+    target_count: Optional[int] = None
+    auto_json: Optional[str] = None
+
+def span_to_execution_data(
+        span: Dict[str, Any],
+        resource_attributes: Dict[str, str],
+        auto_instrumentation_spans: Dict[str, List[Dict[str, Any]]]
+    ) -> Optional[ProcessExecutionData]:
     """스팬 데이터를 ProcessExecution 모델 포맷으로 변환"""
     # 필수 필드 확인
     if not all(key in span for key in ["name", "startTimeUnixNano", "endTimeUnixNano"]):
@@ -54,10 +87,10 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
     duration = (end_time - start_time).total_seconds()
     
     # 성공 여부
-    success = True
+    success = "SUCCESS"
     status_code = span.get("status", {}).get("code", "STATUS_CODE_OK")
     if status_code != "STATUS_CODE_OK":
-        success = False
+        success = "FAILED"
     
     # 플랫폼 유형 판별 (속성 또는 네이밍 기반)
     if "etl.platform" in attributes:
@@ -70,7 +103,8 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
     # 그룹명과 프로세스명 결정
     group_name = attributes.get("etl.group_name", "unknown")
     process_name = attributes.get("etl.process_name", span["name"])
-    
+    script_name = attributes.get("etl.script_name", None)
+
     # 에러 정보
     error_message = attributes.get("etl.error", None)
     error_type = attributes.get("etl.error_type", None)
@@ -97,7 +131,7 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
     
     # 자동계측 데이터 추출 (같은 trace ID를 가진 자동계측 스팬들 찾기)
     auto_json = None
-    if "traceId" in span:
+    if "traceId" in span:   
         trace_id = span["traceId"]
         if trace_id in auto_instrumentation_spans:
             auto_spans = auto_instrumentation_spans[trace_id]
@@ -132,36 +166,33 @@ def span_to_execution_data(span: Dict[str, Any], resource_attributes: Dict[str, 
                 auto_json = json.dumps(span_attributes)
 
     # 결과 데이터
-    result = {
-        "host_name": host_name,
-        "platform_type": platform_type,
-        "group_name": group_name,
-        "process_name": process_name,
-        "success": success,
-        "error_message": error_message,
-        "error_type": error_type,
-        "source_system_type": source_system_type,
-        "source_system_name": source_system_name,
-        "source_endpoint": source_endpoint,
-        "source_object_name": source_object_name,
-        "source_count": source_count,
-        "target_system_type": target_system_type,
-        "target_system_name": target_system_name,
-        "target_endpoint": target_endpoint,
-        "target_object_name": target_object_name,
-        "target_count": target_count,
-        "start_time": start_time,
-        "end_time": end_time,
-        "duration_seconds": duration
-    }
-    
-    # 자동계측 데이터가 있으면 추가
-    if auto_json:
-        result["auto_json"] = auto_json
-    
-    return result
+    return ProcessExecutionData(
+        host_name=host_name,
+        platform_type=platform_type,
+        group_name=group_name,
+        process_name=process_name,
+        script_name=script_name,
+        success=success,
+        start_time=start_time,
+        end_time=end_time,
+        duration_seconds=duration,
+        error_message=error_message,
+        error_type=error_type,
+        source_system_type=source_system_type,
+        source_system_name=source_system_name,
+        source_endpoint=source_endpoint,
+        source_object_name=source_object_name,
+        source_count=source_count,
+        target_system_type=target_system_type,
+        target_system_name=target_system_name,
+        target_endpoint=target_endpoint,
+        target_object_name=target_object_name,
+        target_count=target_count,
+        auto_json=auto_json
+    )
 
-def extract_process_executions(trace_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+
+def extract_process_executions(trace_data: Dict[str, Any]) -> List[ProcessExecutionData]:
     """OpenTelemetry 트레이스 데이터에서 프로세스 실행 정보 추출"""
     executions = []
     

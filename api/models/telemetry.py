@@ -12,6 +12,7 @@ class ProcessExecution(Base):
     platform_type = Column(String(20), nullable=False, index=True)  # 'airflow' 또는 'nifi'
     group_name = Column(String(200), nullable=False, index=True)    # dag_id 또는 process_group
     process_name = Column(String(200), nullable=False, index=True)  # task_id 또는 processor_name
+    script_name = Column(String(200), nullable=False, index=True)  # script_name
     success = Column(Boolean, nullable=False, index=True)
     # attributes = Column(JSON, nullable=True)                        # 추가 속성 정보
     error_message = Column(Text, nullable=True)
