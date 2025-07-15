@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import Span
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
-from system_info import SimpleSystemInfo
+from module.system_info import SimpleSystemInfo
 
 class Platform(Enum):
     """지원되는 플랫폼"""
@@ -91,7 +91,7 @@ def _init_instrumentation():
     
     # requests 자동 계측
     RequestsInstrumentor().instrument()
-    # SQLAlchemyInstrumentor().instrument()
+    SQLAlchemyInstrumentor().instrument()
     _instrumented = True
 
 
