@@ -17,6 +17,7 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import Span
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from system_info import SimpleSystemInfo
 
@@ -90,6 +91,7 @@ def _init_instrumentation():
     
     # requests 자동 계측
     RequestsInstrumentor().instrument()
+    # SQLAlchemyInstrumentor().instrument()
     _instrumented = True
 
 

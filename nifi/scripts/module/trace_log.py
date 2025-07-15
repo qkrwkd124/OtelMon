@@ -1,3 +1,4 @@
+import time
 import traceback
 from datetime import datetime
 from dataclasses import dataclass, asdict, field
@@ -16,25 +17,14 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import Span
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
+from system_info import SimpleSystemInfo
 
 class Platform(Enum):
     """지원되는 플랫폼"""
     NIFI = "NiFi"
     AIRFLOW = "Airflow"
-
-@dataclass
-class SimpleSystemInfo:
-    """시스템 정보"""
-
-    # 필수 필드
-    system_type: str  # 'database', 'file', 'api'
-    system_name: str  # 'postgresql', 's3', 'rest' 등
-    
-    # 선택적 공통 필드
-    endpoint: Optional[str] = None  # 연결 주소/URL/경로
-    object_name: Optional[str] = None  # 테이블/파일/리소스 이름
-    count: Optional[int] = None  # 처리된 레코드 수
 
 @dataclass
 class Result:
@@ -101,6 +91,7 @@ def _init_instrumentation():
     
     # requests 자동 계측
     RequestsInstrumentor().instrument()
+    # SQLAlchemyInstrumentor().instrument()
     _instrumented = True
 
 
@@ -125,19 +116,33 @@ def _init_tracer():
     })
     
     tracer_provider = TracerProvider(resource=resource)
-    span_processor = BatchSpanProcessor(
-        OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"),
-        max_queue_size=2048,            # 큐 크기
-        schedule_delay_millis=5000,     # 5초마다 배치 전송 (기본 30초보다 빠름)
-        max_export_batch_size=512,      # 배치 크기
-        export_timeout_millis=30000     # 전송 타임아웃 30초
-    )
+
+    
+    # 실행 환경에 따라 SpanProcessor 선택
+    # NiFi : 지속적인 JVM 프로세스에서 실행하여 BatchSpanProcessor가 span을 전송할 충분한 시간이 있음
+    # Airflow : 각 태스크가 독립적인 프로세스로 실행 span을 전송하기 전에 프로세스가 종료되어 span이 손실됨.
+    if os.getenv('AIRFLOW_HOME'):  # Airflow 환경 감지
+        # Airflow: 즉시 전송하는 SimpleSpanProcessor 사용
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        span_processor = SimpleSpanProcessor(
+            OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces")
+        )
+    else:
+        # NiFi: 배치 전송하는 BatchSpanProcessor 사용
+        span_processor = BatchSpanProcessor(
+            OTLPSpanExporter(endpoint="http://otelcol:4317/v1/traces"),
+            max_queue_size=2048,            # 큐 크기
+            schedule_delay_millis=5000,     # 5초마다 배치 전송
+            max_export_batch_size=512,      # 배치 크기
+            export_timeout_millis=30000     # 전송 타임아웃 30초
+        )
+
     tracer_provider.add_span_processor(span_processor)
     # 전역 TracerProvider 설정 (OpenTelemetry 내부 싱글톤)
     trace.set_tracer_provider(tracer_provider)
 
     _tracer_initialized = True
-
+    
     # 전역 TracerProvider에서 tracer 가져오기
     return trace.get_tracer(__name__)
 
