@@ -127,7 +127,7 @@ services:
       NIFI_WEB_PROXY_HOST: '0.0.0.0:38443'
       SINGLE_USER_CREDENTIALS_USERNAME: 'admin'
       SINGLE_USER_CREDENTIALS_PASSWORD: 'Admin@nifi1234' # 12자 이상
-      REAL_HOSTNAME: '${REAL_HOSTNAME:-cpietl}'
+      REAL_HOSTNAME: '${REAL_HOSTNAME:-cdietl}'
 
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://nifi:38443/nifi"]

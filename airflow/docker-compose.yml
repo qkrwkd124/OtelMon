@@ -85,6 +85,7 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__STATSD_HOST: statsd-exporter
     AIRFLOW__SCHEDULER__STATSD_PORT: 8125
     AIRFLOW__SCHEDULER__STATSD_PREFIX: airflow
+    REAL_HOSTNAME: '${REAL_HOSTNAME:-cdoetl}'
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
