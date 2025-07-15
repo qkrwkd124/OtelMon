@@ -160,8 +160,8 @@ def span_to_execution_data(
                 
                 auto_spans_data.append(span_attributes)
             
-            if span_attributes:
-                auto_json = json.dumps(span_attributes)
+            if auto_spans_data:
+                auto_json = json.dumps(auto_spans_data)
 
     # 결과 데이터
     return ProcessExecutionData(
