@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List, Tuple, Literal
 import json
 from dataclasses import dataclass
 
@@ -11,10 +11,10 @@ class ProcessExecutionData:
     group_name: str
     process_name: str
     script_name: str
-    success: str
     start_time: datetime
     end_time: datetime
     duration_seconds: float
+    success: Literal["SUCCESS", "FAILED"] = "SUCCESS"
     
     # 선택적 필드들
     error_message: Optional[str] = None

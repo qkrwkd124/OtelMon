@@ -1,7 +1,7 @@
 import logging
 import json
 import gzip
-
+from typing import List
 from fastapi import APIRouter, Request, BackgroundTasks, HTTPException, Depends
 from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
 from opentelemetry.proto.trace.v1 import trace_pb2
@@ -12,6 +12,7 @@ from config import get_settings
 from utils.trace_processor import extract_process_executions
 from services.notification import NotificationService
 from services.database import ProcessExecutionService
+from utils.trace_processor import ProcessExecutionData
 router = APIRouter()
 logger = get_logger(__name__)
 
@@ -63,7 +64,7 @@ async def export_telemetry_data(
         logger.info(f"Raw content length: {len(content)}")
         # logger.info(f"Converted JSON data: {json.dumps(json_data, ensure_ascii=False, indent=2)}")
 
-        execution_data_list = extract_process_executions(json_data)
+        execution_data_list:List[ProcessExecutionData] = extract_process_executions(json_data)
 
         logger.info(f"Extracted execution data: {execution_data_list}")
 
@@ -73,7 +74,7 @@ async def export_telemetry_data(
 
         # 실패한 작업에 대해 알림 발송
         for execution_data in execution_data_list:
-            if not execution_data.get("success", True):
+            if execution_data.success == "FAILED":
                 background_tasks.add_task(notification_service.notify_failure, execution_data)
                 logger.info('mail send')
         return {"status": "success", "data": json_data}

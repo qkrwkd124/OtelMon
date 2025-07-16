@@ -14,7 +14,7 @@ FROM
 LEFT JOIN 
     alert_history ah ON pe.id = ah.process_execution_id
 WHERE 
-    pe.success = FALSE
+    pe.success = 'FAILED'
     AND pe.end_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)
     AND ah.id IS NULL  -- 알람 이력이 없는 항목만 선택
 ORDER BY 
